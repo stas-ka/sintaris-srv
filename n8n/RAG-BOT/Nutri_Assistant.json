@@ -1,0 +1,559 @@
+{
+  "name": "Nutri assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6bcded11-00f1-451a-bfd5-1e437c653241",
+              "leftValue": "={{ $json[\"message\"][\"text\"] }}",
+              "rightValue": "/start",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -5300,
+        -560
+      ],
+      "id": "dac606ee-a6da-4a03-8e5e-2914fe349769",
+      "name": "If start command called"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "3ce89d69-4ffd-4b68-bfa3-12aa56ab8939"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9d548d02-bb27-4094-bcab-eb241cee565e",
+                    "leftValue": "={{ $json.message.voice }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0c126a54-649a-47ab-a709-bc88f057b1d3",
+                    "leftValue": "={{ $json.message.photo }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "bc2bb82e-b00e-4cb7-9243-0d53b0ecc5f2",
+                    "leftValue": "={{ $json.message.document }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -5540,
+        -220
+      ],
+      "id": "9fda2823-3982-47f0-ba7f-04f721a6d894",
+      "name": "Filter for media type"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "Ты — профессиональный AI-ассистент по нутрициологии и здоровому питанию.  \nТвоя задача — **давать ответы только на основе предоставленных тебе знаний** из базы данных (Vector Database в PostgreSQL), которая содержит проверенные научные рекомендации и рецепты.\n\n- Если пользователь спрашивает о рецептах или нутрициологических советах, всегда используй только ту информацию, которая находится в полученном контексте (Knowledge Base, Vector DB).\n- Не придумывай свои ответы и не делай выводов, которых нет в базе знаний.\n- Если на вопрос пользователя нет ответа в базе данных, так и скажи: “Извините, у меня нет информации по вашему вопросу.”\n- Не выдавай советы, если у тебя нет точного ответа из базы знаний.\n\n**Пример твоего ответа:**\n- Если рецепт найден: “Вот подходящий рецепт: ...”\n- Если данных нет: “К сожалению, у меня нет подходящего рецепта по вашему запросу.”\n\n---\n",
+          "maxIterations": 10,
+          "returnIntermediateSteps": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -4480,
+        -500
+      ],
+      "id": "4c9bb9b5-b2e0-40b4-81ce-2e590f667e57",
+      "name": "AI Agent",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.7,
+          "topP": 1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -4760,
+        -240
+      ],
+      "id": "8ca38dc8-8c7e-4cbf-aca1-cf184a302b91",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "ZMs5emvtSBVua9mY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Используй информацию о нутрициологии и рецептах из Postgres Vector DB ",
+        "tableName": "rag_nutri_documents",
+        "options": {
+          "distanceStrategy": "cosine"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        -4320,
+        -40
+      ],
+      "id": "d3eaadb8-9be2-489e-881c-f5e5df604a7e",
+      "name": "Postgres PGVector Store1",
+      "notesInFlow": false,
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -4300,
+        200
+      ],
+      "id": "ba38f9a0-7737-4a00-8543-4c84e2e4773c",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "ZMs5emvtSBVua9mY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('If start command called').item.json.message.chat.id }}",
+        "tableName": "InteligentNutritionist_bot_chat_histories"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -4520,
+        -100
+      ],
+      "id": "d13543d7-f2a4-4ff9-b0ab-b8bd567119e1",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -5820,
+        -200
+      ],
+      "id": "6126f9bd-1b8b-446d-bde1-1fa96aeb926e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Привет, спроси меня, что хочешь по рецептам. Напиши вопрос внизу",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -6040,
+        -360
+      ],
+      "id": "4f4b3c7d-da49-4756-ab67-39b5e7648ebc",
+      "name": "Send Hello after Start",
+      "webhookId": "79ccb1ef-b863-4ae0-b942-4b4d831f2d31",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -6280,
+        -200
+      ],
+      "id": "044bc806-ae49-4f86-a96a-62578b863422",
+      "name": "Processing user input",
+      "webhookId": "4daeddac-7c7c-4464-8a87-2bb1184da775",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('If start command called').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -4120,
+        -500
+      ],
+      "id": "81cc7e47-5a44-4ba7-99dd-3018852c7792",
+      "name": "Telegram",
+      "webhookId": "6bb06bb3-1d8c-40b4-8514-bccf8f570c6a",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8022086a-ff51-4c4d-9118-f0cfd95650fa",
+              "name": "message.text",
+              "value": "Кариес",
+              "type": "string"
+            },
+            {
+              "id": "99daddd2-de23-4795-b6b2-a5b6b2f8569d",
+              "name": "message.chat.id",
+              "value": "123456789",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5000,
+        -380
+      ],
+      "id": "621c3794-e8fd-4d73-b192-2d3b092a951a",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "formTitle": "Testing Nutri AI",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "message.text",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "message.chat.id",
+              "placeholder": "123456789"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -5340,
+        100
+      ],
+      "id": "b9937b59-34ef-4c4e-bcc7-e9f67886c299",
+      "name": "On form submission",
+      "webhookId": "997a0915-8b63-42ab-9979-d241bd88bd78"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If start command called": {
+      "main": [
+        [
+          {
+            "node": "Send Hello after Start",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter for media type": {
+      "main": [
+        [
+          {
+            "node": "If start command called",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres PGVector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Postgres PGVector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Filter for media type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Hello after Start": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processing user input": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "eaa12b8c-b77d-4a7a-9a5c-e0af9e6851e4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3dfb6978cf3399c7fbe84fecd9e1e067da1b213285b388b68830a40c8f3b0a6a"
+  },
+  "id": "WoyBWgHRfFN3XuNj",
+  "tags": [
+    {
+      "createdAt": "2025-07-07T19:23:25.810Z",
+      "updatedAt": "2025-07-07T19:23:25.810Z",
+      "id": "3HiknJDJv9SkqRic",
+      "name": "Current"
+    }
+  ]
+}

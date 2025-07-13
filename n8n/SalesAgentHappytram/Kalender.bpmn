@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+  id="Definitions_ClientDialog"
+  targetNamespace="http://example.bpmn">
+  <process id="ClientDialog" name="Диалог по записи консультации" isExecutable="false">
+    <startEvent id="StartEvent_1" name="Начало диалога"/>
+    
+    <userTask id="Task_1" name="Ассистент: Запросить предпочтительное время у клиента"/>
+    <userTask id="Task_2" name="Клиент: Указать дни и время"/>
+    <serviceTask id="Task_3" name="Ассистент: Проверить календарь и доступные слоты"/>
+    <exclusiveGateway id="Gateway_1" name="Слот доступен?"/>
+    <userTask id="Task_4" name="Ассистент: Предложить варианты клиенту"/>
+    <userTask id="Task_5" name="Клиент: Подтвердить или запросить другие варианты"/>
+    <exclusiveGateway id="Gateway_2" name="Клиент согласен?"/>
+    <serviceTask id="Task_6" name="Ассистент: Найти другие варианты"/>
+    <userTask id="Task_7" name="Клиент: Подтвердить новый вариант или отказаться"/>
+    <exclusiveGateway id="Gateway_3" name="Клиент выбрал слот?"/>
+    <serviceTask id="Task_8" name="Ассистент: Записать в календарь или пометить отказ"/>
+    <endEvent id="EndEvent_1" name="Диалог завершён"/>
+
+    <!-- Потоки -->
+    <sequenceFlow id="flow1" sourceRef="StartEvent_1" targetRef="Task_1"/>
+    <sequenceFlow id="flow2" sourceRef="Task_1" targetRef="Task_2"/>
+    <sequenceFlow id="flow3" sourceRef="Task_2" targetRef="Task_3"/>
+    <sequenceFlow id="flow4" sourceRef="Task_3" targetRef="Gateway_1"/>
+    <sequenceFlow id="flow5" sourceRef="Gateway_1" targetRef="Task_4">
+      <conditionExpression xsi:type="tFormalExpression">Да</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow6" sourceRef="Gateway_1" targetRef="Task_4">
+      <conditionExpression xsi:type="tFormalExpression">Нет</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow7" sourceRef="Task_4" targetRef="Task_5"/>
+    <sequenceFlow id="flow8" sourceRef="Task_5" targetRef="Gateway_2"/>
+    <sequenceFlow id="flow9" sourceRef="Gateway_2" targetRef="Task_8">
+      <conditionExpression xsi:type="tFormalExpression">Согласен</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow10" sourceRef="Gateway_2" targetRef="Task_6">
+      <conditionExpression xsi:type="tFormalExpression">Запросить другие варианты</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow11" sourceRef="Task_6" targetRef="Task_7"/>
+    <sequenceFlow id="flow12" sourceRef="Task_7" targetRef="Gateway_3"/>
+    <sequenceFlow id="flow13" sourceRef="Gateway_3" targetRef="Task_8">
+      <conditionExpression xsi:type="tFormalExpression">Выбрал слот</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow14" sourceRef="Gateway_3" targetRef="Task_8">
+      <conditionExpression xsi:type="tFormalExpression">Отказ</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow15" sourceRef="Task_8" targetRef="EndEvent_1"/>
+
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_ClientDialog">
+    <bpmndi:BPMNPlane id="BPMNPlane_ClientDialog" bpmnElement="ClientDialog">
+      <bpmndi:BPMNShape id="Shape_StartEvent_1" bpmnElement="StartEvent_1">
+        <omgdc:Bounds x="60" y="160" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_1" bpmnElement="Task_1">
+        <omgdc:Bounds x="120" y="150" width="220" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_2" bpmnElement="Task_2">
+        <omgdc:Bounds x="370" y="150" width="160" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_3" bpmnElement="Task_3">
+        <omgdc:Bounds x="550" y="150" width="210" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_1" bpmnElement="Gateway_1">
+        <omgdc:Bounds x="790" y="165" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_4" bpmnElement="Task_4">
+        <omgdc:Bounds x="870" y="110" width="210" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_5" bpmnElement="Task_5">
+        <omgdc:Bounds x="1110" y="110" width="210" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_2" bpmnElement="Gateway_2">
+        <omgdc:Bounds x="1340" y="125" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_6" bpmnElement="Task_6">
+        <omgdc:Bounds x="1430" y="50" width="200" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_7" bpmnElement="Task_7">
+        <omgdc:Bounds x="1660" y="50" width="210" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_3" bpmnElement="Gateway_3">
+        <omgdc:Bounds x="1900" y="65" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_8" bpmnElement="Task_8">
+        <omgdc:Bounds x="2000" y="110" width="220" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_1" bpmnElement="EndEvent_1">
+        <omgdc:Bounds x="2260" y="130" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <!-- Flows -->
+      <bpmndi:BPMNEdge id="Edge_flow1" bpmnElement="flow1">
+        <omgdi:waypoint x="96" y="178"/>
+        <omgdi:waypoint x="120" y="178"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow2" bpmnElement="flow2">
+        <omgdi:waypoint x="340" y="178"/>
+        <omgdi:waypoint x="370" y="178"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow3" bpmnElement="flow3">
+        <omgdi:waypoint x="530" y="178"/>
+        <omgdi:waypoint x="550" y="178"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow4" bpmnElement="flow4">
+        <omgdi:waypoint x="760" y="178"/>
+        <omgdi:waypoint x="790" y="190"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow5" bpmnElement="flow5">
+        <omgdi:waypoint x="840" y="190"/>
+        <omgdi:waypoint x="870" y="138"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow6" bpmnElement="flow6">
+        <omgdi:waypoint x="840" y="190"/>
+        <omgdi:waypoint x="870" y="138"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow7" bpmnElement="flow7">
+        <omgdi:waypoint x="1080" y="138"/>
+        <omgdi:waypoint x="1110" y="138"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow8" bpmnElement="flow8">
+        <omgdi:waypoint x="1320" y="138"/>
+        <omgdi:waypoint x="1340" y="150"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow9" bpmnElement="flow9">
+        <omgdi:waypoint x="1390" y="150"/>
+        <omgdi:waypoint x="2000" y="138"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow10" bpmnElement="flow10">
+        <omgdi:waypoint x="1390" y="150"/>
+        <omgdi:waypoint x="1430" y="78"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow11" bpmnElement="flow11">
+        <omgdi:waypoint x="1630" y="78"/>
+        <omgdi:waypoint x="1660" y="78"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow12" bpmnElement="flow12">
+        <omgdi:waypoint x="1870" y="78"/>
+        <omgdi:waypoint x="1900" y="90"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow13" bpmnElement="flow13">
+        <omgdi:waypoint x="1950" y="90"/>
+        <omgdi:waypoint x="2000" y="138"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow14" bpmnElement="flow14">
+        <omgdi:waypoint x="1950" y="90"/>
+        <omgdi:waypoint x="2000" y="138"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow15" bpmnElement="flow15">
+        <omgdi:waypoint x="2220" y="138"/>
+        <omgdi:waypoint x="2260" y="148"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

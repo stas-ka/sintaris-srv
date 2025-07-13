@@ -1,0 +1,371 @@
+{
+  "name": "Identify new AI Use Cases",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "daysInterval": 2,
+              "triggerAtHour": 18
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -780,
+        0
+      ],
+      "id": "02cb51fd-e553-4823-85d2-b25e40fc88ee",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/137r7IASQtPOdFFVyHlrrhSzYUwVVyOXv8_IRnydcP5E/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "UseCases",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/137r7IASQtPOdFFVyHlrrhSzYUwVVyOXv8_IRnydcP5E/edit#gid=0"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRangeA1",
+              "range": "A:C"
+            }
+          },
+          "outputFormatting": {
+            "values": {
+              "general": "UNFORMATTED_VALUE",
+              "date": "FORMATTED_STRING"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -540,
+        0
+      ],
+      "id": "ca062bae-2d62-4471-bb43-8f4837aed474",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ex0virdFMiOj3Uhy",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Здесь список уже ранее известных UseCases:\n\n{{ $json[\"known_titles\"] }}\n\nНайди в интернете информацию о новых, перспективных UseCases, где можно применить AI агентов в малом и среднем  бизнесе дла снижения временных и финансовых затрат за счет использования AI вместо труда сотрудников. Ищи новые идеи, которые я мог бы реализовать, используя стандартные инструменты наподобие N8N автоматизации, chatgpt, google clod  и например, реализуя их через telegram и доступ к данным или других внешних источниках данных. Я обладаю навыками програмирования python, java, c++, sql, shell, linux, windows, промт инженеринга, LLP , навыки использованиа telegram API, OpenAI API, использованиа баз данных и web течнологий, у меня есть свой VPS сервер для  реализации проектов. Меня в первую очередь интересуют Бизнес идеи, а не то, как их реализовать с указанными технологиями. Выдай максимум 5 лучших, реализуемых и перспективных идей и дай описания к ним, укажи ссылки на то, где ты их нашел. Проверь на перспективность идеи, оцени затратность реализации их одним програмистом и одним бизнес аналитиком.\nВыдай  результаты в виде списка UseCases в JSON  Формате\n[\n  {\n\"Titel\": \"создание рекламной кампании с использованием AI\",\n\"Description\": \"AI Агент для подготовки рекламной кампании поиск идей, генерации текстов, креативов и определение потенциальной аудитории. Созданый с использованием автоматизации n8n и предлагает следующие функции ... . Использует следующие данные ... и предоставляет результаты в виде ...\",\n\"Potential_customers\": \"маркетинг специалисты из разных областей использующие социальные сети\",\n\"Financial_potential_to_earn\": \"Абонемент 200$ в месяц или 1000$ на год. Безлимитно 2000$ per client\",\n\"Costs_to_realize_in_hours\": \"80\",\n\"Perspective_marketing_ranking\": \"0.8\",\n\"Source_links\" : \"https://news.com; https://forum.copywriter-discussions.ru\"\n  },\n…\n]\nвыдавай результаты на русском языке в строгом соответсвие указанного формата , не изменяй названия полей. Вставляй в поле Source_link только проверенные и реальные ссылки из интернета, не добавляй непроверенные ссылки, которые ты не использовал для своего поиска. Оставляй поле пустым, если ты не использовал информацию из интенета для генерации идеи и описание Use Case, можешь добавить туда ссвлки с примерами и описаниями реализации на основе подобных или таких же технологий, которыми я владею.\n\n  ",
+              "role": "assistant"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -120,
+        0
+      ],
+      "id": "8f3475b1-9570-45cf-a628-61e9a52c9299",
+      "name": "OpenAI",
+      "notesInFlow": false,
+      "credentials": {
+        "openAiApi": {
+          "id": "yhOHK3iiKONRSJ3w",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const titles = items.map(item => item.json.Titel);\nconst promptList = titles.map((t, i) => `${i + 1}. ${t}`).join('\\n');\nconsole.log(items);\nreturn [{ json: { known_titles: promptList } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -360,
+        0
+      ],
+      "id": "304b7728-6b00-4173-97f9-897771fe13cd",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/137r7IASQtPOdFFVyHlrrhSzYUwVVyOXv8_IRnydcP5E/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "UseCases",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/137r7IASQtPOdFFVyHlrrhSzYUwVVyOXv8_IRnydcP5E/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Created_at",
+              "displayName": "Created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Titel",
+              "displayName": "Titel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Potential_customers",
+              "displayName": "Potential_customers",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Financial_potential_to_earn",
+              "displayName": "Financial_potential_to_earn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Costs_to_realize_in_hours",
+              "displayName": "Costs_to_realize_in_hours",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Perspective_marketing_ranking",
+              "displayName": "Perspective_marketing_ranking",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Source_links",
+              "displayName": "Source_links",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        520,
+        0
+      ],
+      "id": "b42e305c-8668-40f2-be41-43d814315362",
+      "name": "Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ex0virdFMiOj3Uhy",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "soulsoul-003@yandex.ru",
+        "subject": "New update of AI USeCases added",
+        "message": "s. https://docs.google.com/spreadsheets/d/137r7IASQtPOdFFVyHlrrhSzYUwVVyOXv8_IRnydcP5E/edit?gid=0#gid=0",
+        "options": {
+          "ccList": "stas.ulmer@gmail.com"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        740,
+        0
+      ],
+      "id": "a0f578b3-20c8-440a-beb4-2a6dc33b6bb6",
+      "name": "Gmail",
+      "webhookId": "0b1b598d-bc02-45f1-a70c-b25b32b8913a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "kCL7D4L5ay0FgWaY",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n\n// Zugriff auf die Ideen aus GPT\nconst useCases = items[0].json.message.content.UseCases;\n\n// Aktueller Zeitstempel (einmal erzeugen, für alle gleich)\nconst now = new Date().toISOString();\n\nreturn useCases.map(useCase => {\n  const base = useCase.Titel ;\n  const hash = crypto.createHash('md5').update(base).digest('hex').slice(0, 6);\n\n  return {\n    json: {\n      ID: hash,\n      Titel: useCase.Titel,\n      Description: useCase.Description,\n      Potential_customers: useCase.Potential_customers,\n      Financial_potential_to_earn: useCase.Financial_potential_to_earn,\n      Costs_to_realize_in_hours: useCase.Costs_to_realize_in_hours,\n      Perspective_marketing_ranking: useCase.Perspective_marketing_ranking,\n      Source_links: useCase.Source_links,\n      Created_at: now  // ⏱ Zeitstempel \n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "b4f40655-fb5f-4e6a-8eca-d428f1e524ce",
+      "name": "Code1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets1": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        []
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d92f8bcc-44c7-46e0-9157-7f455ede0f2a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0388216044608223a30b06f9e36c8823ce117497af48bf58a150318a5bc4f7a3"
+  },
+  "id": "vAeAVN41hG4SzOEq",
+  "tags": []
+}
