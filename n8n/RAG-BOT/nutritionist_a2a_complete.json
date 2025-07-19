@@ -1,0 +1,471 @@
+[
+  {
+    "name": "A2A Nutritionist - Main",
+    "nodes": [
+      {
+        "parameters": {
+          "path": "nutritionist",
+          "httpMethod": "POST"
+        },
+        "id": "webhook_nutritionist",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          200,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "functionCode": "const { customer_id, goal, meal_time, preferences } = $json;\nreturn [{\n  json: {\n    input: { customer_id, goal, meal_time, preferences }\n  }\n}];"
+        },
+        "id": "function_parse_input",
+        "name": "Parse Input",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [
+          400,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "values": {
+            "string": [
+              {
+                "name": "status",
+                "value": "success"
+              },
+              {
+                "name": "suggestion",
+                "value": "Zucchini-Nudeln mit Tomatensauce und Tofu."
+              },
+              {
+                "name": "calories",
+                "value": "420"
+              }
+            ]
+          }
+        },
+        "id": "set_response",
+        "name": "Generate Response",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1,
+        "position": [
+          600,
+          300
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "respond_to_webhook",
+        "name": "Return Result",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          800,
+          300
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Parse Input",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parse Input": {
+        "main": [
+          [
+            {
+              "node": "Generate Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Generate Response": {
+        "main": [
+          [
+            {
+              "node": "Return Result",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {},
+    "tags": [
+      {
+        "name": "A2A"
+      }
+    ]
+  },
+  {
+    "name": "A2A Nutritionist - Meta",
+    "nodes": [
+      {
+        "parameters": {
+          "path": "agent-meta",
+          "httpMethod": "GET"
+        },
+        "id": "webhook_meta",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          200,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "values": {
+            "string": [
+              {
+                "name": "agent_id",
+                "value": "nutritionist-assistant"
+              },
+              {
+                "name": "version",
+                "value": "1.0.0"
+              },
+              {
+                "name": "capabilities",
+                "value": "nutrition_advice,meal_plans,allergy_check"
+              },
+              {
+                "name": "author",
+                "value": "Stanislav Ulmer"
+              }
+            ]
+          }
+        },
+        "id": "set_meta",
+        "name": "Set Meta",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1,
+        "position": [
+          400,
+          300
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "respond_meta",
+        "name": "Respond",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          600,
+          300
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Set Meta",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Set Meta": {
+        "main": [
+          [
+            {
+              "node": "Respond",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {},
+    "tags": [
+      {
+        "name": "A2A"
+      }
+    ]
+  },
+  {
+    "name": "A2A Nutritionist - Status",
+    "nodes": [
+      {
+        "parameters": {
+          "path": "agent-status",
+          "httpMethod": "GET"
+        },
+        "id": "webhook_status",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          200,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "values": {
+            "string": [
+              {
+                "name": "status",
+                "value": "ok"
+              },
+              {
+                "name": "last_error",
+                "value": ""
+              },
+              {
+                "name": "uptime",
+                "value": "48h 3min"
+              },
+              {
+                "name": "active_threads",
+                "value": "2"
+              }
+            ]
+          }
+        },
+        "id": "set_status",
+        "name": "Set Status",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1,
+        "position": [
+          400,
+          300
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "respond_status",
+        "name": "Respond",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          600,
+          300
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Set Status",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Set Status": {
+        "main": [
+          [
+            {
+              "node": "Respond",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {},
+    "tags": [
+      {
+        "name": "A2A"
+      }
+    ]
+  },
+  {
+    "name": "A2A Nutritionist - DB Status",
+    "nodes": [
+      {
+        "parameters": {
+          "path": "db-status",
+          "httpMethod": "GET"
+        },
+        "id": "webhook_db_status",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          200,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "values": {
+            "string": [
+              {
+                "name": "db_connection",
+                "value": "connected"
+              },
+              {
+                "name": "records_total",
+                "value": "275"
+              },
+              {
+                "name": "health_check",
+                "value": "ok"
+              }
+            ]
+          }
+        },
+        "id": "set_db_status",
+        "name": "Set DB Status",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1,
+        "position": [
+          400,
+          300
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "respond_db_status",
+        "name": "Respond",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          600,
+          300
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Set DB Status",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Set DB Status": {
+        "main": [
+          [
+            {
+              "node": "Respond",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {},
+    "tags": [
+      {
+        "name": "A2A"
+      }
+    ]
+  },
+  {
+    "name": "A2A Nutritionist - Customer Info",
+    "nodes": [
+      {
+        "parameters": {
+          "path": "customer",
+          "httpMethod": "GET",
+          "options": {
+            "queryParameters": [
+              {
+                "name": "id"
+              }
+            ]
+          }
+        },
+        "id": "webhook_customer",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          200,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "functionCode": "const id = $json[\"id\"] || $query[\"id\"] || \"unknown\";\nreturn [{\n  json: {\n    customer_id: id,\n    name: \"Alex Mustermann\",\n    allergies: [\"Milch\", \"Ei\"],\n    goals: [\"Muskelaufbau\"],\n    preferred_contact: \"Telegram\"\n  }\n}];"
+        },
+        "id": "function_customer_data",
+        "name": "Build Customer JSON",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [
+          400,
+          300
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "respond_customer",
+        "name": "Respond",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          600,
+          300
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Build Customer JSON",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Customer JSON": {
+        "main": [
+          [
+            {
+              "node": "Respond",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {},
+    "tags": [
+      {
+        "name": "A2A"
+      }
+    ]
+  }
+]
