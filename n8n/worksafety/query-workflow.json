@@ -1,0 +1,39 @@
+{
+  "id": "query-workflow",
+  "name": "Query Chunks",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Webhook Query",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [300, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "query"
+      }
+    },
+    {
+      "id": "2",
+      "name": "Return Example Chunks",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "parameters": {
+        "functionCode": "const q = items[0].json.q || \"\";\nreturn [{ json: [\n  { id: \"chunk1\", text: `Erster Beispiel-Chunk zu \"${q}\".` },\n  { id: \"chunk2\", text: `Zweiter Beispiel-Chunk mit relevanten Infos zu \"${q}\".` }\n] }];"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Query": {
+      "main": [
+        [
+          { "node": "Return Example Chunks", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "staticData": {}
+}

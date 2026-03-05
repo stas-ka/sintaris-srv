@@ -1,0 +1,50 @@
+
+   {
+	   "active": false,
+	   "settings": {
+		"executionOrder": "v1"
+	   },
+		"versionId": "bdaf75e2-a044-4be0-9c42-93d874f6b63f",
+		"meta": {
+		"instanceId": "3dfb6978cf3399c7fbe84fecd9e1e067da1b213285b388b68830a40c8f3b0a6a"
+	    },
+	    "id": "QR2Cvm4I6X9N7yzu",
+	    "tags": []
+	    "name": "Categorize + Store (Drive→Text→LDA/OpenAI→Categories→PGVector)", 
+	  "nodes": [
+        {"name": "Cron (daily)", "type": "n8n-nodes-base.cron", "parameters": {"triggerTimes": [{"hour": 3, "minute": 0}]}},
+        {"name": "GDrive List", "type": "n8n-nodes-base.googleDrive", "parameters": {"operation": "list", "returnAll": true, "filters": {"q": "'{{$env.GDRIVE_FOLDER_ID}}' in parents"}}},
+        {"name": "Filter Extensions", "type": "n8n-nodes-base.function", "parameters": {"functionCode": "return items.filter(i=>{const n=(i.json.name||'').toLowerCase();return ['.pdf','.docx','.doc','.rtf','.txt'].some(ext=>n.endsWith(ext));});"}},
+        {"name": "Download File", "type": "n8n-nodes-base.googleDrive", "parameters": {"operation": "download"}},
+        {"name": "Write Binary → /data", "type": "n8n-nodes-base.writeBinaryFile", "parameters": {"fileName": "/data/inbox/{{ $json.name }}", "dataPropertyName": "data"}},
+        {"name": "Text Extract (Python)", "type": "n8n-nodes-base.executeCommand", "parameters": {"command": "bash", "arguments": "-lc", "input": "json", "inputData": "={{ { path: '/data/inbox/' + $json.name } }}", "shellCommand": "python - <<'PY'\nimport sys, json, pathlib\nfrom pathlib import Path\nfrom typing import Tuple\n\n# Reader je nach Endung\ndef read_any(p: Path) -> Tuple[str,str]:\n    s = p.suffix.lower()\n    if s=='.pdf':\n        from pypdf import PdfReader\n        txt=''.join(page.extract_text() or '' for page in PdfReader(str(p)).pages)\n        return txt, 'application/pdf'\n    if s=='.docx':\n        import docx\n        d=docx.Document(str(p))\n        return '\n'.join([para.text for para in d.paragraphs]), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'\n    if s=='.rtf':\n        from striprtf.striprtf import rtf_to_text\n        return rtf_to_text(p.read_text(errors='ignore')), 'application/rtf'\n    if s=='.txt':\n        return p.read_text(errors='ignore'), 'text/plain'\n    if s=='.doc':\n        import subprocess\n        out = subprocess.check_output(['antiword', str(p)], text=True, stderr=subprocess.DEVNULL)\n        return out, 'application/msword'\n    return p.read_text(errors='ignore'), 'application/octet-stream'\n\npayload=json.load(sys.stdin)\np=Path(payload['path'])\ntext,mime=read_any(p)\nprint(json.dumps({\"path\":str(p),\"filename\":p.name,\"mime\":mime,\"text\":text}))\nPY"}},
+        {"name": "Doc Hash + Meta", "type": "n8n-nodes-base.function", "parameters": {"functionCode": "const crypto=require('crypto');const t=$json.text||'';const name=$json.filename;const hash=crypto.createHash('sha256').update(t).digest('hex');return [{json:{filename:name, mime:$json.mime, text:t, sha256:hash, size:Buffer.from(t,'utf8').length}}];"}},
+        {"name": "UPSERT documents", "type": "n8n-nodes-base.postgres", "parameters": {"operation": "executeQuery", "query": "INSERT INTO documents(filename,mime_type,sha256,size_bytes)\nVALUES(:filename,:mime,:sha256,:size)\nON CONFLICT (sha256) DO UPDATE SET filename=EXCLUDED.filename\nRETURNING id;"}},
+        {"name": "Chunking", "type": "n8n-nodes-base.function", "parameters": {"functionCode": "const text=$json.text||'';const CH=1800;const chunks=[];for(let i=0,idx=0;i<text.length;i+=CH,idx++){chunks.push({json:{chunk_index:idx, content:text.slice(i,i+CH)}});}return chunks;"}},
+        {"name": "LDA (Python)", "type": "n8n-nodes-base.executeCommand", "parameters": {"command": "bash", "arguments": "-lc", "input": "json", "inputData": "={{ { content: $json.content } }}", "shellCommand": "python - <<'PY'\nimport sys,json\nfrom gensim import corpora, models\nfrom nltk.corpus import stopwords\nfrom nltk.tokenize import word_tokenize\n\npl=json.load(sys.stdin)\ntext=pl.get('content','')\nwords=[w.lower() for w in word_tokenize(text) if w.isalpha()]\nstop=set(stopwords.words('german'))\nwords=[w for w in words if w not in stop]\ncat='allgemein';dist={}\nif len(words)>=40:\n    d=corpora.Dictionary([words])\n    c=[d.doc2bow(words)]\n    lda=models.LdaModel(c, id2word=d, num_topics=5, passes=2)\n    topics=lda.show_topics(num_topics=1, num_words=6, formatted=False)\n    cat=", ".join(w for w,_ in topics[0][1])\n    dist={int(t):float(p) for t,p in lda.get_document_topics(c[0])}\nprint(json.dumps({\"lda_top_topic\":cat,\"lda_topic_dist\":dist}))\nPY"}},
+        {"name": "OpenAI Category (optional)", "type": "n8n-nodes-base.openai", "parameters": {"operation": "chat", "model": "gpt-4o-mini", "messages": [{"role": "system", "content": "Gib eine knappe KATEGORIE (1-4 Worte, DE) für den folgenden Text. Antwort nur mit der Kategorie, ohne Erklärungen."}, {"role": "user", "content": "{{ $json.content }}"}], "jsonParameters": true}},
+        {"name": "Pick Category", "type": "n8n-nodes-base.function", "parameters": {"functionCode": "const lda=$json.lda_top_topic;const llm=$json.data?.choices?.[0]?.message?.content?.trim();const name=(llm&&llm.length<=60?llm:lda)||'allgemein';return [{json:{category_name:name, lda_top_topic:lda, lda_topic_dist:$json.lda_topic_dist}}];"}},
+        {"name": "UPSERT category", "type": "n8n-nodes-base.postgres", "parameters": {"operation": "executeQuery", "query": "INSERT INTO categories(name,source,confidence)\nVALUES(:category_name,'LDA+OpenAI',0.85)\nON CONFLICT (name) DO UPDATE SET updated_at=NOW()\nRETURNING id AS category_id;"}},
+        {"name": "INSERT chunk", "type": "n8n-nodes-base.postgres", "parameters": {"operation": "executeQuery", "query": "WITH doc AS (SELECT id FROM documents ORDER BY created_at DESC LIMIT 1)\nINSERT INTO chunks(document_id,chunk_index,content,tokens,lda_top_topic,lda_topic_dist,category_id)\nVALUES ((SELECT id FROM doc), :chunk_index, :content, char_length(:content), :lda_top_topic, :lda_topic_dist::jsonb, :category_id)\nRETURNING id, category_id;"}},
+        {"name": "PGVector Insert", "type": "n8n-nodes-base.pgVector", "parameters": {"operation": "insert", "text": "={{ $json.content }}", "embeddingModel": "openai:text-embedding-3-small", "vectorDimensions": 1536, "metadata": "={{ { chunk_id: $json.id, category_id: $json.category_id } }}"}}
+      ],
+	  "pinData": {},
+  
+      "connections": [
+        ["Cron (daily)", "GDrive List"],
+        ["GDrive List", "Filter Extensions"],
+        ["Filter Extensions", "Download File"],
+        ["Download File", "Write Binary → /data"],
+        ["Write Binary → /data", "Text Extract (Python)"],
+        ["Text Extract (Python)", "Doc Hash + Meta"],
+        ["Doc Hash + Meta", "UPSERT documents"],
+        ["UPSERT documents", "Chunking"],
+        ["Chunking", "LDA (Python)"],
+        ["Chunking", "OpenAI Category (optional)"],
+        ["LDA (Python)", "Pick Category"],
+        ["OpenAI Category (optional)", "Pick Category"],
+        ["Pick Category", "UPSERT category"],
+        ["UPSERT category", "INSERT chunk"],
+        ["INSERT chunk", "PGVector Insert"]
+      ]
+    }

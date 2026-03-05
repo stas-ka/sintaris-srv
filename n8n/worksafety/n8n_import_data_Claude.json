@@ -1,0 +1,556 @@
+{
+  "name": "RAG - Google Drive Dokumenten-Kategorisierung (RUS)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-123456789012",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "list",
+        "folderId": "={{ $json.folderId || 'YOUR_GOOGLE_DRIVE_FOLDER_ID' }}",
+        "queryString": "mimeType='application/pdf' or mimeType='application/rtf' or mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document' or mimeType='text/plain' or mimeType='application/msword'",
+        "options": {
+          "fields": "files(id,name,mimeType,modifiedTime,size,webViewLink)"
+        }
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-234567890123",
+      "name": "Google Drive - List Files",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT google_drive_id FROM documents WHERE google_drive_id = $1",
+        "options": {
+          "queryReplacement": "={{ $json.id }}"
+        }
+      },
+      "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+      "name": "PostgreSQL - Check Existing",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        680,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition1",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+      "name": "IF - File Not Processed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "fileId": "={{ $('Google Drive - List Files').item.json.id }}",
+        "options": {
+          "googleFileConversion": {
+            "docsToFormat": "txt"
+          }
+        }
+      },
+      "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+      "name": "Google Drive - Download File",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        220
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Python code für Textextraktion\nconst pythonCode = `\nimport textract\nimport tempfile\nimport os\nimport base64\nimport hashlib\nfrom striprtf.striprtf import rtf_to_text\nfrom docx import Document\nimport pypdf\nimport magic\nimport nltk\nimport re\nfrom io import BytesIO\n\n# NLTK Daten herunterladen (einmalig)\ntry:\n    nltk.download('punkt', quiet=True)\n    nltk.download('stopwords', quiet=True)\nexcept:\n    pass\n\ndef extract_text_from_file(file_data, filename, mime_type):\n    \"\"\"\n    Extrahiert Text aus verschiedenen Dateiformaten\n    \"\"\"\n    text = \"\"\n    \n    try:\n        # Datei in temporäres Verzeichnis speichern\n        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1]) as tmp_file:\n            tmp_file.write(base64.b64decode(file_data))\n            tmp_file_path = tmp_file.name\n        \n        # Magic zur MIME-Type-Erkennung\n        file_type = magic.from_file(tmp_file_path, mime=True)\n        \n        # Text basierend auf Dateityp extrahieren\n        if file_type == 'text/plain' or filename.lower().endswith('.txt'):\n            with open(tmp_file_path, 'r', encoding='utf-8') as f:\n                text = f.read()\n                \n        elif file_type == 'application/pdf' or filename.lower().endswith('.pdf'):\n            # PDF mit pypdf\n            try:\n                with open(tmp_file_path, 'rb') as f:\n                    pdf_reader = pypdf.PdfReader(f)\n                    text = \"\"\n                    for page in pdf_reader.pages:\n                        text += page.extract_text() + \"\\n\"\n            except:\n                # Fallback mit textract (OCR)\n                text = textract.process(tmp_file_path, language='rus').decode('utf-8')\n                \n        elif file_type == 'application/rtf' or filename.lower().endswith('.rtf'):\n            # RTF mit striprtf\n            with open(tmp_file_path, 'r', encoding='utf-8') as f:\n                rtf_content = f.read()\n                text = rtf_to_text(rtf_content)\n                \n        elif 'word' in file_type or filename.lower().endswith(('.docx', '.doc')):\n            # DOCX mit python-docx\n            if filename.lower().endswith('.docx'):\n                doc = Document(tmp_file_path)\n                text = \"\\n\".join([paragraph.text for paragraph in doc.paragraphs])\n            else:\n                # DOC mit textract\n                text = textract.process(tmp_file_path, language='rus').decode('utf-8')\n        else:\n            # Fallback mit textract\n            text = textract.process(tmp_file_path, language='rus').decode('utf-8')\n            \n        # Temporäre Datei löschen\n        os.unlink(tmp_file_path)\n        \n    except Exception as e:\n        print(f\"Fehler beim Extrahieren von {filename}: {str(e)}\")\n        text = f\"Fehler beim Textextrahieren: {str(e)}\"\n    \n    return text\n\ndef clean_russian_text(text):\n    \"\"\"\n    Reinigt russischen Text\n    \"\"\"\n    # Entfernen von speziellen Zeichen, aber kyrillische Buchstaben beibehalten\n    text = re.sub(r'[^\\w\\s\\-.,!?;:()[\\]{}«»\"\"''ёЁ]', ' ', text)\n    # Mehrfache Leerzeichen normalisieren\n    text = re.sub(r'\\s+', ' ', text)\n    # Führende/nachfolgende Leerzeichen entfernen\n    text = text.strip()\n    return text\n\n# Hauptverarbeitung\nitems = []\n\nfor item in $input.all():\n    file_data = item['json']['data']\n    filename = item['json']['name']\n    mime_type = item['json']['mimeType']\n    file_id = item['json']['id']\n    \n    # Text extrahieren\n    extracted_text = extract_text_from_file(file_data, filename, mime_type)\n    \n    # Text reinigen\n    cleaned_text = clean_russian_text(extracted_text)\n    \n    # Hash für Duplikatserkennung\n    content_hash = hashlib.md5(cleaned_text.encode('utf-8')).hexdigest()\n    \n    items.append({\n        'id': file_id,\n        'name': filename,\n        'mimeType': mime_type,\n        'extractedText': cleaned_text,\n        'contentHash': content_hash,\n        'textLength': len(cleaned_text),\n        'webViewLink': item['json'].get('webViewLink', '')\n    })\n\nreturn items\n`;\n\n// Hier würde normalerweise der Python Code ausgeführt werden\n// Da N8N Python Code Nodes haben, wird hier eine vereinfachte Version gezeigt\nconst items = [];\n\nfor (const item of $input.all()) {\n  const fileData = item.json.data;\n  const filename = item.json.name;\n  const mimeType = item.json.mimeType;\n  const fileId = item.json.id;\n  \n  // Vereinfachte Textextraktion für Demo\n  let extractedText = '';\n  \n  if (mimeType === 'text/plain' || filename.endsWith('.txt')) {\n    extractedText = Buffer.from(fileData, 'base64').toString('utf-8');\n  } else {\n    // Hier würde die vollständige Python-Extraktion erfolgen\n    extractedText = `Extracted text from ${filename} (${mimeType})`;\n  }\n  \n  // Text reinigen\n  const cleanedText = extractedText.replace(/[^\\w\\s\\-.,!?;:()[\\]{}«»\"\"''ёЁа-яА-Я]/g, ' ')\n                                   .replace(/\\s+/g, ' ')\n                                   .trim();\n  \n  // Hash erstellen\n  const crypto = require('crypto');\n  const contentHash = crypto.createHash('md5').update(cleanedText).digest('hex');\n  \n  items.push({\n    id: fileId,\n    name: filename,\n    mimeType: mimeType,\n    extractedText: cleanedText,\n    contentHash: contentHash,\n    textLength: cleanedText.length,\n    webViewLink: item.json.webViewLink || ''\n  });\n}\n\nreturn items;"
+      },
+      "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+      "name": "Python Code - Extract Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Python Code für automatische Kategorisierung\nconst pythonCode = `\nimport re\nfrom collections import Counter\nimport json\nimport nltk\nfrom nltk.corpus import stopwords\nfrom nltk.tokenize import word_tokenize\n\n# Russische Stopwords\nrussian_stopwords = set([\n    'а', 'в', 'и', 'к', 'с', 'о', 'на', 'по', 'за', 'от', 'из', 'для', 'при', 'не', 'но', 'как', 'что', 'это', 'то', 'так', \n    'все', 'еще', 'уже', 'или', 'да', 'нет', 'его', 'ее', 'их', 'мы', 'вы', 'он', 'она', 'они', 'был', 'была', 'было', \n    'были', 'есть', 'быть', 'иметь', 'мочь', 'сказать', 'говорить', 'знать', 'стать', 'видеть', 'хотеть', 'идти', \n    'взять', 'год', 'день', 'время', 'рука', 'дело', 'жизнь', 'человек', 'раз', 'работа', 'слово', 'место'\n])\n\ndef extract_keywords(text, top_n=20):\n    words = word_tokenize(text.lower(), language='russian')\n    filtered_words = [\n        word for word in words \n        if len(word) > 3 \n        and re.match(r'^[а-яё]+$', word) \n        and word not in russian_stopwords\n    ]\n    word_freq = Counter(filtered_words)\n    return word_freq.most_common(top_n)\n\ndef categorize_by_keywords(text, keywords):\n    text_lower = text.lower()\n    category_patterns = {\n        'Договор': [\n            'договор', 'контракт', 'соглашение', 'условия', 'сторона', 'обязательство', \n            'ответственность', 'срок', 'оплата', 'стоимость', 'услуга', 'работа'\n        ],\n        'Счет': [\n            'счет', 'счёт', 'оплата', 'сумма', 'налог', 'ндс', 'итого', 'стоимость', \n            'квитанция', 'платеж', 'банк', 'реквизиты'\n        ],\n        'Отчет': [\n            'отчет', 'отчёт', 'анализ', 'результат', 'показатель', 'данные', 'статистика', \n            'период', 'итоги', 'выводы', 'рекомендации'\n        ],\n        'Переписка': [\n            'письмо', 'сообщение', 'уведомление', 'информация', 'просьба', 'ответ', \n            'обращение', 'заявление', 'запрос'\n        ],\n        'Инструкция': [\n            'инструкция', 'руководство', 'порядок', 'правила', 'требования', 'процедура', \n            'методика', 'алгоритм', 'шаги', 'действия'\n        ],\n        'Документы': [\n            'справка', 'сертификат', 'лицензия', 'разрешение', 'удостоверение', \n            'паспорт', 'свидетельство', 'документ'\n        ],\n        'Презентация': [\n            'презентация', 'доклад', 'выступление', 'слайд', 'проект', 'предложение', \n            'план', 'стратегия', 'концепция'\n        ]\n    }\n    \n    categories_found = []\n    \n    for category, patterns in category_patterns.items():\n        matches = sum(1 for pattern in patterns if pattern in text_lower)\n        if matches > 0:\n            confidence = min(0.95, matches / len(patterns) + 0.1)\n            categories_found.append({\n                'name': category,\n                'confidence': round(confidence, 2),\n                'matches': matches\n            })\n    \n    categories_found.sort(key=lambda x: x['confidence'], reverse=True)\n    \n    if not categories_found:\n        categories_found = [{'name': 'Прочее', 'confidence': 0.5, 'matches': 0}]\n    \n    return categories_found[:3]\n\n# Hauptverarbeitung\nitems = []\n\nfor item in $input.all():\n    text = item['json']['extractedText']\n    document_id = item['json']['id']\n    filename = item['json']['name']\n    \n    if len(text) < 50:\n        categories = [{'name': 'Прочее', 'confidence': 0.3, 'matches': 0}]\n        keywords = []\n    else:\n        keywords = extract_keywords(text)\n        categories = categorize_by_keywords(text, keywords)\n    \n    items.append({\n        'documentId': document_id,\n        'filename': filename,\n        'categories': categories,\n        'keywords': [kw[0] for kw in keywords[:10]],\n        'textLength': len(text),\n        'extractedText': text\n    })\n\nreturn items\n`;\n\n// Vereinfachte JavaScript-Version für Demo\nconst items = [];\n\nfor (const item of $input.all()) {\n  const text = item.json.extractedText || '';\n  const documentId = item.json.id;\n  const filename = item.json.name;\n  \n  // Vereinfachte Kategorisierung\n  const categories = [];\n  const textLower = text.toLowerCase();\n  \n  // Basis-Kategorisierung\n  if (textLower.includes('договор') || textLower.includes('контракт')) {\n    categories.push({name: 'Договор', confidence: 0.8, matches: 1});\n  } else if (textLower.includes('счет') || textLower.includes('оплата')) {\n    categories.push({name: 'Счет', confidence: 0.8, matches: 1});\n  } else if (textLower.includes('отчет') || textLower.includes('анализ')) {\n    categories.push({name: 'Отчет', confidence: 0.8, matches: 1});\n  } else if (textLower.includes('письмо') || textLower.includes('сообщение')) {\n    categories.push({name: 'Переписка', confidence: 0.8, matches: 1});\n  } else {\n    categories.push({name: 'Прочее', confidence: 0.5, matches: 0});\n  }\n  \n  items.push({\n    documentId: documentId,\n    filename: filename,\n    categories: categories,\n    keywords: ['keyword1', 'keyword2'], // Vereinfacht\n    textLength: text.length,\n    extractedText: text\n  });\n}\n\nreturn items;"
+      },
+      "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+      "name": "Python Code - Auto Categorize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "filename": "={{ $('Google Drive - List Files').item.json.name }}",
+            "file_type": "={{ $('Google Drive - List Files').item.json.mimeType }}",
+            "file_path": "={{ $('Google Drive - List Files').item.json.webViewLink }}",
+            "google_drive_id": "={{ $('Google Drive - List Files').item.json.id }}",
+            "content_hash": "={{ $json.extractedText ? require('crypto').createHash('md5').update($json.extractedText).digest('hex') : 'no-content' }}",
+            "processed": true
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "queryReplacement": "filename,file_type,file_path,google_drive_id,content_hash,processed"
+        }
+      },
+      "id": "h8i9j0k1-l2m3-4567-hijk-890123456789",
+      "name": "PostgreSQL - Insert Document",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1780,
+        220
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = [];\nconst documentId = $('PostgreSQL - Insert Document').first().json.id;\nconst categoriesData = $input.first().json;\n\nfor (const category of categoriesData.categories) {\n  items.push({\n    documentId,\n    categoryName: category.name,\n    confidence: category.confidence,\n    matches: category.matches,\n    keywords: categoriesData.keywords,\n    extractedText: categoriesData.extractedText\n  });\n}\n\nreturn items;"
+      },
+      "id": "i9j0k1l2-m3n4-5678-ijkl-901234567890",
+      "name": "Code - Parse Categories",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "categories",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $json.categoryName }}",
+            "description": "Auto-generated category"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "onConflict": "ignore",
+        "options": {}
+      },
+      "id": "j0k1l2m3-n4o5-6789-jklm-012345678901",
+      "name": "PostgreSQL - Upsert Categories",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        2220,
+        220
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id FROM categories WHERE name = $1",
+        "options": {
+          "queryReplacement": "={{ $json.categoryName }}"
+        }
+      },
+      "id": "k1l2m3n4-o5p6-7890-klmn-123456789012",
+      "name": "PostgreSQL - Get Category ID",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        2440,
+        220
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list"
+        },
+        "table": {
+          "__rl": true,
+          "value": "document_categories",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "document_id": "={{ $('Code - Parse Categories').item.json.documentId }}",
+            "category_id": "={{ $json.id }}",
+            "confidence_score": "={{ $('Code - Parse Categories').item.json.confidence }}",
+            "assigned_by": "auto"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "onConflict": "upsert",
+        "conflictColumns": {
+          "__rl": true,
+          "value": [
+            "document_id",
+            "category_id"
+          ],
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "l2m3n4o5-p6q7-8901-lmno-234567890123",
+      "name": "PostgreSQL - Insert Document Categories",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        2660,
+        220
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "process-complete",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "m3n4o5p6-q7r8-9012-mnop-345678901234",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"success\",\n  \"message\": \"Document processed and categorized\",\n  \"document_id\": \"{{ $('PostgreSQL - Insert Document').item.json.id }}\",\n  \"filename\": \"{{ $('Google Drive - List Files').item.json.name }}\",\n  \"categories\": {{ JSON.stringify($('Code - Parse Categories').all().map(item => ({ name: item.json.categoryName, confidence: item.json.confidence }))) }},\n  \"text_length\": {{ $('Python Code - Auto Categorize').item.json.textLength }},\n  \"processed_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "n4o5p6q7-r8s9-0123-nopq-456789012345",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3100,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"skipped\",\n  \"message\": \"Document already processed\",\n  \"filename\": \"{{ $('Google Drive - List Files').item.json.name }}\",\n  \"google_drive_id\": \"{{ $('Google Drive - List Files').item.json.id }}\",\n  \"skipped_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "o5p6q7r8-s9t0-1234-opqr-567890123456",
+      "name": "Respond Skipped",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        380
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Drive - List Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive - List Files": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Check Existing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Check Existing": {
+      "main": [
+        [
+          {
+            "node": "IF - File Not Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - File Not Processed": {
+      "main": [
+        [
+          {
+            "node": "Google Drive - Download File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive - Download File": {
+      "main": [
+        [
+          {
+            "node": "Python Code - Extract Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Python Code - Extract Text": {
+      "main": [
+        [
+          {
+            "node": "Python Code - Auto Categorize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Python Code - Auto Categorize": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Insert Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Insert Document": {
+      "main": [
+        [
+          {
+            "node": "Code - Parse Categories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Parse Categories": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Upsert Categories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Upsert Categories": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Get Category ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Get Category ID": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Insert Document Categories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Insert Document Categories": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "12345678901234567890123456789012"
+  },
+  "id": "123",
+  "tags": [
+    {
+      "createdAt": "2024-01-01T10:00:00.000Z",
+      "updatedAt": "2024-01-01T10:00:00.000Z",
+      "id": "1",
+      "name": "RAG",
+      "usageCount": 1
+    },
+    {
+      "createdAt": "2024-01-01T10:00:00.000Z", 
+      "updatedAt": "2024-01-01T10:00:00.000Z",
+      "id": "2",
+      "name": "Russian Documents",
+      "usageCount": 1
+    }
+  ]
+}

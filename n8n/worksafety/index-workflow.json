@@ -1,0 +1,39 @@
+{
+  "id": "index-workflow",
+  "name": "Index Chunks",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Webhook Index",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [300, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "index"
+      }
+    },
+    {
+      "id": "2",
+      "name": "Return Index Ack",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [500, 300],
+      "parameters": {
+        "functionCode": "const chunks = items[0].json.chunks || []; return [{ json: { status: \"indexed\", count: chunks.length } }];"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Index": {
+      "main": [
+        [
+          { "node": "Return Index Ack", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "staticData": {}
+}

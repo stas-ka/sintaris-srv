@@ -1,0 +1,630 @@
+{
+  "name": "Nutri Assistant - import Knowledge",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "filename",
+                "value": "={{ $('Download File').item.json.name }}"
+              },
+              {
+                "name": "id",
+                "value": "={{ $('Download File').item.json.id }}"
+              },
+              {
+                "name": "gold",
+                "value": "false"
+              }
+            ]
+          }
+        }
+      },
+      "id": "8a2009e7-a19c-4c19-9f5b-0ee458d35d14",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        2000,
+        544
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 50,
+        "options": {}
+      },
+      "id": "1c84d7cb-8cae-47af-bb61-70055f0419f8",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        2080,
+        752
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "rag_nutri_documents",
+        "options": {}
+      },
+      "id": "7572935e-caf5-4619-8cfc-bd9174018be3",
+      "name": "Postgres PGVector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "position": [
+        1904,
+        320
+      ],
+      "typeVersion": 1.1,
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres n8n_apps account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "bd1ebfbf-ffd8-42a4-b766-75ab6a86010e",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        832,
+        128
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Loop Over Items').item.json.id }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1-iakYXIBFGdcvdg7C_7zBheZtwUmfiuH",
+          "mode": "list",
+          "cachedResultName": "txt_archive",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1-iakYXIBFGdcvdg7C_7zBheZtwUmfiuH"
+        }
+      },
+      "id": "b46b3067-6564-4da9-8185-fecede63687e",
+      "name": "Move File",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        2464,
+        720
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mtZWpJVTMNOrBSnP",
+          "name": "Google Drive account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {}
+      },
+      "id": "39c14b12-856b-4256-9fcb-b5fb806116e5",
+      "name": "Download File",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1088,
+        128
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mtZWpJVTMNOrBSnP",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1G0bWvysOn2HuFPwTHJLAC_tlVLDok4NH",
+            "mode": "list",
+            "cachedResultName": "txt",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1G0bWvysOn2HuFPwTHJLAC_tlVLDok4NH"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {
+          "fields": [
+            "id",
+            "name"
+          ]
+        }
+      },
+      "id": "ecf7ae2e-f470-4166-b22d-e06e57d33974",
+      "name": "Search Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        480,
+        192
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mtZWpJVTMNOrBSnP",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "2dd454ce-ab24-4f84-bdc8-818647b912b8",
+      "name": "Extract from PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        1568,
+        144
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "1a469802-9c82-4067-980d-dad92920dc9c",
+      "name": "Extract from Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        1568,
+        -64
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "903a06a7-8fc8-415a-8582-3e4a043b1791",
+      "name": "Extract from JSON",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        1552,
+        320
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "00afb4a3-d6e5-4101-a88e-317198a035bb",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        1824,
+        544
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "ZMs5emvtSBVua9mY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Import данных из Google  в текстовом PDF, JSON форматах в Базу знаний Vector DB (PostgreSQL Vector Extension) . Акутуализация данных пока не работает. НЕобходимо заранее удалить таблицу",
+        "height": 1060,
+        "width": 3000
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -160
+      ],
+      "id": "9e88d33f-9853-4c9e-8d29-cb13578e9ce9",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "formTitle": "Start import Data for Vector DB",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Comments"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        112,
+        400
+      ],
+      "id": "54836982-c0bc-4a71-95da-ccfac3b3047a",
+      "name": "On form submission1",
+      "webhookId": "cf7365a7-ecde-4bf5-a9c1-92fd5a7da2ef"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.name }}",
+                    "rightValue": ".txt",
+                    "operator": {
+                      "type": "string",
+                      "operation": "endsWith"
+                    },
+                    "id": "387c94e2-0b6a-4a95-8145-7ac1105dbbb3"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "txt"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7c7e662b-48f7-4e3b-b6a7-81b27148b363",
+                    "leftValue": "={{ $json.name }}",
+                    "rightValue": ".pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "endsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "4d3fd8b7-7f71-4a52-a836-d1a1a6c7bb8a",
+                    "leftValue": "={{ $json.name }}",
+                    "rightValue": ".json",
+                    "operator": {
+                      "type": "string",
+                      "operation": "endsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "json"
+            }
+          ]
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "id": "76da0569-0394-464a-ba92-254352c9d67f",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1264,
+        128
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "throwErrorMessage": "PgVector import data has thrown an error"
+      },
+      "type": "n8n-nodes-base.debugHelper",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        304
+      ],
+      "id": "df455c0d-5279-46b9-b676-75c452dd61c7",
+      "name": "DebugHelper",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "throwErrorMessage": "Move file error"
+      },
+      "type": "n8n-nodes-base.debugHelper",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        832
+      ],
+      "id": "0091d2ff-41bc-4b5b-a02d-af5e803d6244",
+      "name": "DebugHelper1",
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "pinData": {
+    "On form submission1": [
+      {
+        "json": {
+          "Comments": "",
+          "submittedAt": "2025-07-13T17:43:46.720+02:00",
+          "formMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres PGVector Store": {
+      "main": [
+        [
+          {
+            "node": "Move File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DebugHelper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Download File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move File": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DebugHelper1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download File": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Folder": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from PDF": {
+      "main": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from Text": {
+      "main": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from JSON": {
+      "main": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission1": {
+      "main": [
+        [
+          {
+            "node": "Search Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Extract from Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DebugHelper1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DebugHelper": {
+      "main": [
+        [
+          {
+            "node": "Move File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Move File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bdaf75e2-a044-4be0-9c42-93d874f6b63f",
+  "meta": {
+    "instanceId": "3dfb6978cf3399c7fbe84fecd9e1e067da1b213285b388b68830a40c8f3b0a6a"
+  },
+  "id": "QR2Cvm4I6X9N7yzu",
+  "tags": []
+}

@@ -1,0 +1,65 @@
+{
+  "name": "WorkSafety_Knowledgebase",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "b729714a-4d08-4f15-89bd-5108a5db1d3a",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        -32
+      ],
+      "id": "3f6bb258-5f84-4b0d-9318-8398bba12ec0",
+      "name": "GPTPlugin Webhook",
+      "webhookId": "b729714a-4d08-4f15-89bd-5108a5db1d3a"
+    },
+	{
+        "id": "1",
+        "name": "Webhook Extract",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [300, 300],
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "extract"
+        }
+      },
+      {
+        "id": "2",
+        "name": "Return Raw Text",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [500, 300],
+        "parameters": {
+          "functionCode": "return [{ json: { text: \"Dies ist ein Beispiel-Rohtext aus dem Dokument.\" } }];"
+        }
+      }
+  ],
+  "pinData": {},
+  "connections": {
+      "Webhook Extract": {
+        "main": [
+          [
+            {
+              "node": "Return Raw Text",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "77e29f5c-37da-4533-b707-d3a4d806bfe9",
+  "meta": {
+    "instanceId": "3dfb6978cf3399c7fbe84fecd9e1e067da1b213285b388b68830a40c8f3b0a6a"
+  },
+  "id": "HxY62gCJQ3Rk5jkP",
+  "tags": []
+}

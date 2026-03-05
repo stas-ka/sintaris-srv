@@ -1,0 +1,89 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"]
+      },
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [100, 200],
+      "credentials": { "telegramApi": "Telegram Bot Token" }
+    },
+    {
+      "parameters": {
+        "query": "SELECT * FROM activation_codes WHERE code = $1 AND status = 'ACTIVE'",
+        "additionalFields": {}
+      },
+      "name": "SQL Check Code",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [300, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.length > 0}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "name": "IF Code Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [500, 200]
+    },
+    {
+      "parameters": {
+        "query": "INSERT INTO activation_code_usage_log (code, user_id, input_tokens, output_tokens) VALUES ($1, $2, 0, 0)",
+        "additionalFields": {}
+      },
+      "name": "SQL Log Usage",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [700, 150]
+    },
+    {
+      "parameters": {
+        "text": "Код активирован и доступен для использования.",
+        "chatId": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"chat\"][\"id\"]}}"
+      },
+      "name": "Telegram Success",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [900, 150],
+      "credentials": { "telegramApi": "Telegram Bot Token" }
+    },
+    {
+      "parameters": {
+        "text": "Код недействителен или уже использован.",
+        "chatId": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"chat\"][\"id\"]}}"
+      },
+      "name": "Telegram Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [700, 300],
+      "credentials": { "telegramApi": "Telegram Bot Token" }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{ "node": "SQL Check Code", "type": "main", "index": 0 }]]
+    },
+    "SQL Check Code": {
+      "main": [[{ "node": "IF Code Exists", "type": "main", "index": 0 }]]
+    },
+    "IF Code Exists": {
+      "main": [
+        [{ "node": "SQL Log Usage", "type": "main", "index": 0 }],
+        [{ "node": "Telegram Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "SQL Log Usage": {
+      "main": [[{ "node": "Telegram Success", "type": "main", "index": 0 }]]
+    }
+  }
+}

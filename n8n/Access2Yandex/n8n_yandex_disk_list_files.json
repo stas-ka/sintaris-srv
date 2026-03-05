@@ -1,0 +1,52 @@
+{
+  "name": "\ud83d\udcc2 List Files from Yandex Disk",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "url": "https://cloud-api.yandex.net/v1/disk/resources?path=disk:/",
+        "responseFormat": "json"
+      },
+      "id": "1",
+      "name": "Yandex Disk List",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "__YOUR_YANDEX_CREDENTIAL_ID__",
+          "name": "Yandex Disk OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const items = $json._embedded?.items || [];\nreturn items.map(file => ({\n  json: {\n    name: file.name,\n    path: file.path,\n    size: file.size,\n    type: file.type,\n    created: file.created\n  }\n}));"
+      },
+      "id": "2",
+      "name": "Extract File Info",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Yandex Disk List": {
+      "main": [
+        [
+          {
+            "node": "Extract File Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
