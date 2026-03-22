@@ -1,0 +1,85 @@
+{
+  "name": "Clinic Assistant Telegram Start",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          {
+            "chatId": "={{$json[\"message\"][\"chat\"][\"id\"]}}",
+            "text": "\ud83d\udc4b \u0414\u043e\u0431\u0440\u043e \u043f\u043e\u0436\u0430\u043b\u043e\u0432\u0430\u0442\u044c \u0432 \u043a\u043b\u0438\u043d\u0438\u043a\u0443! \u041f\u043e\u0436\u0430\u043b\u0443\u0439\u0441\u0442\u0430, \u043d\u0430\u043f\u0438\u0448\u0438\u0442\u0435 \u0432\u0430\u0448\u0435 \u0438\u043c\u044f."
+          }
+        ]
+      },
+      "name": "Send Greeting",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "item.client_id = $json[\"message\"][\"chat\"][\"id\"];\nitem.name = $json[\"message\"][\"text\"];\nitem.timestamp = new Date().toISOString();\nreturn item;"
+      },
+      "name": "Extract Client Info",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "query": "INSERT INTO clients (tg_id, name, registered_at) VALUES ({{$json[\"client_id\"]}}, '{{$json[\"name\"]}}', '{{$json[\"timestamp\"]}') ON CONFLICT DO NOTHING"
+      },
+      "name": "Save Client in PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "2",
+          "name": "PostgreSQL"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Send Greeting": {
+      "main": [
+        [
+          {
+            "node": "Extract Client Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Client Info": {
+      "main": [
+        [
+          {
+            "node": "Save Client in PostgreSQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "1"
+}

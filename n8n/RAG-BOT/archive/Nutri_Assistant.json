@@ -1,0 +1,987 @@
+{
+  "name": "Nutri assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6bcded11-00f1-451a-bfd5-1e437c653241",
+              "leftValue": "={{ $json.tgrm_msg.text  === '/start' }}\n",
+              "rightValue": "/start",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -4140,
+        -720
+      ],
+      "id": "dac606ee-a6da-4a03-8e5e-2914fe349769",
+      "name": "If start command called"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tgrm_msg.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "3ce89d69-4ffd-4b68-bfa3-12aa56ab8939"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9d548d02-bb27-4094-bcab-eb241cee565e",
+                    "leftValue": "={{ $json.message.voice }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0c126a54-649a-47ab-a709-bc88f057b1d3",
+                    "leftValue": "={{ $json.message.photo }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "bc2bb82e-b00e-4cb7-9243-0d53b0ecc5f2",
+                    "leftValue": "={{ $json.message.document }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "document"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -4340,
+        -480
+      ],
+      "id": "9fda2823-3982-47f0-ba7f-04f721a6d894",
+      "name": "Filter for media type"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.tgrm_msg.text }}",
+        "options": {
+          "systemMessage": "Ты — профессиональный AI-ассистент по нутрициологии и здоровому питанию.  \nТвоя задача — **давать ответы только на основе предоставленных тебе знаний** из базы данных (Vector Database в PostgreSQL), которая содержит проверенные научные рекомендации и рецепты.\n\n- Если пользователь спрашивает о рецептах или нутрициологических советах, всегда используй только ту информацию, которая находится в полученном контексте (Knowledge Base, Vector DB).\n- Не придумывай свои ответы и не делай выводов, которых нет в базе знаний.\n- Если на вопрос пользователя нет ответа в базе данных, так и скажи: “Извините, у меня нет информации по вашему вопросу.”\n- Не выдавай советы, если у тебя нет точного ответа из базы знаний.\n\n\n\n**Пример твоего ответа:**\n- Если рецепт найден: “Вот подходящий рецепт: ... \\n\\n )”\n- Если данных нет: “К сожалению, у меня нет подходящего рецепта по вашему запросу.”\n\nВ конце верни переданный тебе prompt, на который ты ответил, включая все переданные тебе данные полученные от Tool и из контекста, полученные в виде запроса в формате: \n“*Для ответа использовался запрос и контекст)*:\n<сюда вставь весь использованный тобой prompt и данные, переданные тебе для ответа> “\\n\\n \n“*Для ответа я использовал следующую информацию из базы знаний:*\\n ...“\n\nОтвет и prompt всегда должны быть в формате **Markdown для Telegram (v1)**:\n- Избегай незакрытых символов (`*`, `_`, `[`).\n- Экранируй спецсимволы внутри данных и текста: `\\*`, `\\_`, ``\\` ``, `\\[`, `\\]`.\n---\nУбедись, что итоговый текст не вызывает ошибок при парсинге Telegram.",
+          "maxIterations": 10,
+          "returnIntermediateSteps": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -3460,
+        -300
+      ],
+      "id": "4c9bb9b5-b2e0-40b4-81ce-2e590f667e57",
+      "name": "AI Agent",
+      "notesInFlow": true,
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.7,
+          "topP": 1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -3620,
+        -140
+      ],
+      "id": "8ca38dc8-8c7e-4cbf-aca1-cf184a302b91",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "ZMs5emvtSBVua9mY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Используй информацию о нутрициологии и рецептах из Postgres Vector DB ",
+        "tableName": "rag_nutri_documents",
+        "options": {
+          "distanceStrategy": "cosine"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        -3100,
+        -140
+      ],
+      "id": "d3eaadb8-9be2-489e-881c-f5e5df604a7e",
+      "name": "Postgres PGVector Store1",
+      "notesInFlow": false,
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -3000,
+        20
+      ],
+      "id": "ba38f9a0-7737-4a00-8543-4c84e2e4773c",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "ZMs5emvtSBVua9mY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.tgrm_msg.from.id }}",
+        "tableName": "InteligentNutritionist_bot_chat_histories"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -3400,
+        -120
+      ],
+      "id": "d13543d7-f2a4-4ff9-b0ab-b8bd567119e1",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -4580,
+        -440
+      ],
+      "id": "6126f9bd-1b8b-446d-bde1-1fa96aeb926e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Привет, спроси меня, что хочешь по рецептам. Напиши вопрос внизу",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -4860,
+        -460
+      ],
+      "id": "4f4b3c7d-da49-4756-ab67-39b5e7648ebc",
+      "name": "Send Hello after Start",
+      "webhookId": "79ccb1ef-b863-4ae0-b942-4b4d831f2d31",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -6300,
+        -260
+      ],
+      "id": "044bc806-ae49-4f86-a96a-62578b863422",
+      "name": "Processing user input",
+      "webhookId": "4daeddac-7c7c-4464-8a87-2bb1184da775",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8022086a-ff51-4c4d-9118-f0cfd95650fa",
+              "name": "message.text",
+              "value": "Кариес",
+              "type": "string"
+            },
+            {
+              "id": "99daddd2-de23-4795-b6b2-a5b6b2f8569d",
+              "name": "message.chat.id",
+              "value": "123456789",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4840,
+        280
+      ],
+      "id": "621c3794-e8fd-4d73-b192-2d3b092a951a",
+      "name": "Edit Fields",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "formTitle": "Testing Nutri AI",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "message.text",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "message.chat.id",
+              "placeholder": "123456789"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -6220,
+        40
+      ],
+      "id": "b9937b59-34ef-4c4e-bcc7-e9f67886c299",
+      "name": "On form submission",
+      "webhookId": "997a0915-8b63-42ab-9979-d241bd88bd78",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    telegramOriginal: $json,\n    userInput: $json.message?.text || '',\n    username: $json.message?.from?.username || ''\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6960,
+        -180
+      ],
+      "id": "9db8b845-4c10-4148-ae6c-2befea5d3497",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4f63e0b6-1140-4016-9533-57925253ab32",
+              "name": "telegramOriginal",
+              "value": "={{ $json.telegramOriginal }}",
+              "type": "object"
+            },
+            {
+              "id": "1a897961-967d-4878-8a7a-c675fb7f72f8",
+              "name": "userInput",
+              "value": "={{ $json.userInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -6740,
+        -160
+      ],
+      "id": "d096c53a-60b1-4c82-aec8-0e0db156be56",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5700,
+        300
+      ],
+      "id": "aa58c3aa-f25e-4aac-a0cb-49169d31c13c",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "chatId": "{{ $json.tgrm_msg.chat.id }",
+        "text": "Извините произошла ошибка",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2280,
+        -80
+      ],
+      "id": "341b8ef4-86e2-451f-a9cc-8bccfdcced3c",
+      "name": "Send error message to user",
+      "webhookId": "23362b6e-0640-45fc-8d47-02ea735ca2b9",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "994963580",
+        "text": "=[BOT_MSG]Произошла ошибка при обработке данных \\n{{ $json.output }} ",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2540,
+        -80
+      ],
+      "id": "6f38178b-df44-4e99-aba5-60391d325a4d",
+      "name": "Send Error Message from AI Agent to Admin",
+      "webhookId": "826e1ee0-25b9-417b-88c7-1f542511a091",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2960,
+        -380
+      ],
+      "id": "3c284a6b-f1f5-431e-b3c0-c1301b01621d",
+      "name": "merge error with tgrm_msg"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2920,
+        -640
+      ],
+      "id": "27fe182e-a0af-4d8e-8ebf-8b00fee9ee62",
+      "name": "merge output with tgrm_msg"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.tgrm_msg.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2680,
+        -380
+      ],
+      "id": "81cc7e47-5a44-4ba7-99dd-3018852c7792",
+      "name": "Send answer to user",
+      "webhookId": "6bb06bb3-1d8c-40b4-8514-bccf8f570c6a",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tgrm_user",
+          "mode": "list",
+          "cachedResultName": "tgrm_user"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "bot": "={{ $json.tgrm_msg.from.is_bot }}",
+            "id": "={{ $json.tgrm_msg.from.id }}",
+            "chat_id": "={{ $json.tgrm_msg.chat.id }}",
+            "user_name": "={{ $json.tgrm_msg.from.username }}",
+            "first_name": "={{ $json.tgrm_msg.from.first_name }}",
+            "active": "active",
+            "full_name": "="
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "user_name",
+              "displayName": "user_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "full_name",
+              "displayName": "full_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bot",
+              "displayName": "bot",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "desc",
+              "displayName": "desc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "start_params",
+              "displayName": "start_params",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "create_timestamp",
+              "displayName": "create_timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "last_action",
+              "displayName": "last_action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "active",
+              "displayName": "active",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -4740,
+        -260
+      ],
+      "id": "b5594cc0-de1d-4bf9-bc04-3fcc4e6ba204",
+      "name": "Save user data in DB",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    tgrm_msg: $json.message}\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5860,
+        -260
+      ],
+      "id": "5b40398c-dfda-4a18-b430-af94ddaed043",
+      "name": "Set data from telegram in tgrm_msg"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If start command called": {
+      "main": [
+        [
+          {
+            "node": "Send Hello after Start",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "merge output with tgrm_msg",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "merge error with tgrm_msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter for media type": {
+      "main": [
+        [
+          {
+            "node": "If start command called",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres PGVector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Postgres PGVector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Filter for media type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "merge output with tgrm_msg",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "merge error with tgrm_msg",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Send Hello after Start": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processing user input": {
+      "main": [
+        [
+          {
+            "node": "Set data from telegram in tgrm_msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        []
+      ]
+    },
+    "Send Error Message from AI Agent to Admin": {
+      "main": [
+        [
+          {
+            "node": "Send error message to user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "merge error with tgrm_msg": {
+      "main": [
+        [
+          {
+            "node": "Send Error Message from AI Agent to Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "merge output with tgrm_msg": {
+      "main": [
+        [
+          {
+            "node": "Send answer to user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send answer to user": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send Error Message from AI Agent to Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save user data in DB": {
+      "main": [
+        []
+      ]
+    },
+    "Set data from telegram in tgrm_msg": {
+      "main": [
+        [
+          {
+            "node": "Save user data in DB",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "59c5903b-944e-4564-ac28-f49b1160123e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3dfb6978cf3399c7fbe84fecd9e1e067da1b213285b388b68830a40c8f3b0a6a"
+  },
+  "id": "WoyBWgHRfFN3XuNj",
+  "tags": [
+    {
+      "createdAt": "2025-07-07T19:23:25.810Z",
+      "updatedAt": "2025-07-07T19:23:25.810Z",
+      "id": "3HiknJDJv9SkqRic",
+      "name": "Current"
+    }
+  ]
+}

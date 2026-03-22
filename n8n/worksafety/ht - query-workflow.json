@@ -1,0 +1,60 @@
+{
+  "name": "ht - query-workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "query",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "b8f11179-e417-495c-a897-094a942db87e",
+      "name": "Webhook Query",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "eced6a31-1d8b-4027-b01a-5e43e85b08dc"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Beispiel: q steckt unter json.body.q\nconst qRaw = items[0].json.body?.q ?? items[0].json.params?.q ?? \"\";\nconst q = qRaw.toLowerCase();\n\n// Deine Mock-Chunks\nconst all = [\n  { id: \"c1\", text: \"Isolierklasse H05VV-F gemäß DIN VDE 0298-4\" },\n  { id: \"c2\", text: \"Mantelstärke mindestens 0,5 mm²\" },\n  { id: \"c3\", text: \"Farbkennzeichnung nach Tabelle 11\" },\n  { id: \"c4\", text: \"Mindestabstand 5 mm zu scharfen Kanten\" }\n];\n\n// Filter anwenden\nconst filtered = all.filter(chunk =>\n  chunk.text.toLowerCase().includes(q)\n);\n\n// Gib nur die gefundenen Chunks zurück\nreturn filtered.map(chunk => ({ json: chunk }));\n"
+      },
+      "id": "89f48dd9-dbd1-40b7-bfcf-6527d06c9b40",
+      "name": "Return Example Chunks",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Query": {
+      "main": [
+        [
+          {
+            "node": "Return Example Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "facab5aa-20b1-4b04-91a3-3895b184de3a",
+  "meta": {
+    "instanceId": "3dfb6978cf3399c7fbe84fecd9e1e067da1b213285b388b68830a40c8f3b0a6a"
+  },
+  "id": "px0mLiMQEqIiXimc",
+  "tags": []
+}

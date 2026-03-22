@@ -1,0 +1,112 @@
+{
+  "name": "Text-Backup Workflow (Korrigiert)",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Node 1: Einfache Metadaten-Sammlung\nconst items = [];\n\nfor (const item of $input.all()) {\n  const extractedData = item.json;\n  const originalFile = $('Google Drive - Get All Files').item.json;\n  \n  // Timestamp für Dateinamen\n  const timestamp = new Date();\n  const timestampStr = timestamp.toISOString().replace(/[:.]/g, '-').split('.')[0];\n  \n  // Normalisierte Dateinamen\n  const baseFilename = extractedData.name.replace(/\\.[^/.]+$/, \"\")\n    .replace(/[^a-zA-Zа-яёА-ЯЁ0-9\\-_\\s]/g, '')\n    .replace(/\\s+/g, '_')\n    .substring(0, 80); // Kurzer Name\n  \n  const textFilename = `extracted_${baseFilename}_${timestampStr}.txt`;\n  \n  // Nur wichtige Metadaten\n  const metadata = {\n    original_file: {\n      filename: originalFile.name,\n      google_drive_id: originalFile.id,\n      mime_type: originalFile.mimeType,\n      file_size: originalFile.size || 'Неизвестно',\n      last_modified: originalFile.modifiedTime,\n      web_view_link: originalFile.webViewLink\n    },\n    extraction: {\n      timestamp: timestamp.toISOString(),\n      timestamp_local: timestamp.toLocaleString('ru-RU', { \n        timeZone: 'Europe/Moscow',\n        year: 'numeric',\n        month: '2-digit', \n        day: '2-digit',\n        hour: '2-digit',\n        minute: '2-digit',\n        second: '2-digit'\n      }),\n      method: 'Автоматическое извлечение текста'\n    },\n    content: {\n      text_length: extractedData.extractedText.length,\n      word_count: extractedData.extractedText.split(/\\s+/).filter(w => w.length > 0).length,\n      line_count: extractedData.extractedText.split('\\n').length,\n      content_hash: extractedData.contentHash,\n      language: 'Русский',\n      encoding: 'UTF-8'\n    },\n    document_info: {\n      title: extractedData.documentStructure?.title || 'Не определен',\n      has_structure: !!(extractedData.documentStructure?.sections?.length || extractedData.documentStructure?.headings?.length)\n    }\n  };\n  \n  items.push({\n    textFilename: textFilename,\n    metadata: metadata,\n    extractedText: extractedData.extractedText,\n    originalFile: originalFile\n  });\n}\n\nreturn items;"
+      },
+      "id": "a1b2c3d4-e5f6-1111-abcd-123456789001",
+      "name": "Code - Collect Simple Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Node 2: Formatierung der Text-Datei (nur Text + Metadaten)\nconst items = [];\n\nfor (const item of $input.all()) {\n  const { textFilename, metadata, extractedText } = item.json;\n  \n  // Einfache, klare Formatierung\n  let content = ``;\n  \n  // Header\n  content += `ИЗВЛЕЧЕННЫЙ ТЕКСТ ИЗ ДОКУМЕНТА\\n`;\n  content += `${'='.repeat(60)}\\n\\n`;\n  \n  // Metadaten\n  content += `ИНФОРМАЦИЯ О ФАЙЛЕ:\\n`;\n  content += `  Исходный файл: ${metadata.original_file.filename}\\n`;\n  content += `  Google Drive ID: ${metadata.original_file.google_drive_id}\\n`;\n  content += `  Тип файла: ${metadata.original_file.mime_type}\\n`;\n  content += `  Размер файла: ${formatFileSize(metadata.original_file.file_size)}\\n`;\n  content += `  Последнее изменение: ${metadata.original_file.last_modified}\\n`;\n  content += `  Ссылка: ${metadata.original_file.web_view_link}\\n\\n`;\n  \n  content += `ИНФОРМАЦИЯ ОБ ИЗВЛЕЧЕНИИ:\\n`;\n  content += `  Дата и время: ${metadata.extraction.timestamp_local}\\n`;\n  content += `  Метод: ${metadata.extraction.method}\\n`;\n  content += `  Хеш содержимого: ${metadata.content.content_hash}\\n\\n`;\n  \n  content += `СТАТИСТИКА ТЕКСТА:\\n`;\n  content += `  Размер: ${metadata.content.text_length.toLocaleString()} символов\\n`;\n  content += `  Слов: ${metadata.content.word_count.toLocaleString()}\\n`;\n  content += `  Строк: ${metadata.content.line_count.toLocaleString()}\\n`;\n  content += `  Язык: ${metadata.content.language}\\n`;\n  content += `  Кодировка: ${metadata.content.encoding}\\n`;\n  \n  if (metadata.document_info.title !== 'Не определен') {\n    content += `  Заголовок: ${metadata.document_info.title}\\n`;\n  }\n  \n  content += `\\n${'='.repeat(60)}\\n`;\n  content += `СОДЕРЖАНИЕ ДОКУМЕНТА\\n`;\n  content += `${'='.repeat(60)}\\n\\n`;\n  \n  // Полный extrahierter Text\n  content += extractedText;\n  \n  // Footer\n  content += `\\n\\n${'='.repeat(60)}\\n`;\n  content += `Файл создан: ${new Date().toLocaleString('ru-RU')}\\n`;\n  content += `Система: N8N Text Extraction Pipeline\\n`;\n  content += `${'='.repeat(60)}`;\n  \n  // Hilfsfunktion für Dateigröße\n  function formatFileSize(bytes) {\n    if (!bytes || bytes === 'Неизвестно') return 'Неизвестно';\n    const sizes = ['Б', 'КБ', 'МБ', 'ГБ'];\n    const i = Math.floor(Math.log(bytes) / Math.log(1024));\n    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];\n  }\n  \n  // Zu Base64 konvertieren\n  const base64Content = Buffer.from(content, 'utf-8').toString('base64');\n  \n  items.push({\n    textFilename: textFilename,\n    content: content,\n    base64Content: base64Content,\n    fileSize: content.length,\n    metadata: metadata\n  });\n}\n\nreturn items;"
+      },
+      "id": "b2c3d4e5-f6g7-2222-bcde-234567890002",
+      "name": "Code - Format Simple Text File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "name": "={{ $json.textFilename }}",
+        "binaryData": false,
+        "fileContent": "={{ $json.base64Content }}",
+        "options": {
+          "parentId": "YOUR_EXTRACTED_TEXTS_FOLDER_ID",
+          "mimeType": "text/plain; charset=utf-8",
+          "description": "Извлеченный текст из {{ $json.metadata.original_file.filename }}. Создан {{ $json.metadata.extraction.timestamp_local }}."
+        }
+      },
+      "id": "c3d4e5f6-g7h8-3333-cdef-345678901003",
+      "name": "Google Drive - Upload Simple Text File",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2000,
+        220
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive Account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code - Collect Simple Metadata": {
+      "main": [
+        [
+          {
+            "node": "Code - Format Simple Text File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Format Simple Text File": {
+      "main": [
+        [
+          {
+            "node": "Google Drive - Upload Simple Text File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "12345678901234567890123456789012"
+  },
+  "id": "126",
+  "tags": [
+    {
+      "createdAt": "2024-08-11T15:00:00.000Z",
+      "updatedAt": "2024-08-11T15:00:00.000Z",
+      "id": "1",
+      "name": "Text Backup",
+      "usageCount": 1
+    },
+    {
+      "createdAt": "2024-08-11T15:00:00.000Z",
+      "updatedAt": "2024-08-11T15:00:00.000Z",
+      "id": "2",
+      "name": "Google Drive",
+      "usageCount": 1
+    }
+  ]
+}

@@ -1,0 +1,1209 @@
+{
+  "name": "Nutri Assistant - user_code_activation",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ Object.keys($json).length > 0 }}",
+              "operation": "notEqual"
+            }
+          ]
+        }
+      },
+      "name": "IF Code Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        -160
+      ],
+      "id": "b7791275-3e49-44e5-9d71-e0519e47c258"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n   \"msg_text\": \"TESTCODE_SHARED\",\n   \"msg_chat_id\": \"994963580\",\n   \"msg_from_id\": \"994963580\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1648,
+        -48
+      ],
+      "id": "e0983d8a-eb52-4ee3-86f4-347fc2ef5fbe",
+      "name": "Set code to test"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.user_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "number",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "441d1e68-6419-4e88-993d-5bb5ffb2c9cb"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "used"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "5755f382-4726-4692-a9a8-f111749689fd",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "ACTIVE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "not_active"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "ignoreCase": true,
+          "renameFallbackOutput": "valid"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -304,
+        -416
+      ],
+      "id": "747706f4-103e-4224-b5d3-edc932d42eb6",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log(\"SET USER DATA\");\n\n$execution.customData.set(\"msg_chat_id\", $json.msg_chat_id);\n$execution.customData.set(\"msg_text\", $json.msg_text);\n$execution.customData.set(\"msg_from_id\",$json.msg_from_id);\n\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\n// Логирование (необязательно)\nconsole.log(\"session_data:\", session_data);\n\n// Возврат как JSON-результат\nreturn {\n  json: session_data\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1488,
+        -96
+      ],
+      "id": "462eb5c7-0265-4dde-8ecf-bfc6245b7cb4",
+      "name": "Сохранить данные о пользователи в контесте"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.output;\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nconsole.log(\"session_data:\", session_data);\n// Возврат как JSON-результат\nreturn {\n  json: session_data\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        -688
+      ],
+      "id": "c0bbb519-e8fa-4501-8440-c3661fa14d34",
+      "name": "get session_data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.output;\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nconsole.log(\"session_data:\", session_data);\n// Возврат как JSON-результат\nreturn {\n  json: session_data\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -528
+      ],
+      "id": "994ec382-4a67-4041-bf02-71cefee469c1",
+      "name": "get session_data1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.msg_chat_id }}",
+        "text": "Код недействителен.",
+        "additionalFields": {}
+      },
+      "name": "Telegram Error - code not exist",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        208
+      ],
+      "id": "f3edec61-ae14-4ffb-94fa-2d903554f3a3",
+      "webhookId": "9e16e9da-10bf-4f2d-b0a2-8549591ad302",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.msg_chat_id }}",
+        "text": "Код уже использован и деактивирован. Код не может быть активирован",
+        "additionalFields": {}
+      },
+      "name": "Telegram Error - code deactivated",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        -496
+      ],
+      "id": "60991ed6-dde6-4160-b3ad-93b039342bf3",
+      "webhookId": "9e16e9da-10bf-4f2d-b0a2-8549591ad302",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.msg_chat_id }}",
+        "text": "Код уже использован или недействителен. Код не может быть активаирован",
+        "additionalFields": {}
+      },
+      "name": "Telegram Error - already used code",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        -688
+      ],
+      "id": "4587708d-7ae3-4c22-b47d-136bb69d028d",
+      "webhookId": "9e16e9da-10bf-4f2d-b0a2-8549591ad302",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.output;\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nconsole.log(\"session_data:\", session_data);\n// Возврат как JSON-результат\nreturn {\n  json: session_data\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        -336
+      ],
+      "id": "f9efb824-fb3a-44f3-aa5a-c21ccaa40816",
+      "name": "get session_data2"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.msg_chat_id }}",
+        "text": "Код активирован и доступен для использования.",
+        "additionalFields": {}
+      },
+      "name": "Telegram - Код активирован",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        -272
+      ],
+      "id": "052f81d3-de49-4afa-a14c-2f956d9a3556",
+      "webhookId": "35bc4f0c-31b3-4433-ad25-7859c84cb000",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const code = $input.first().json.output;\nconst error=\"code_not_activated\"\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nconsole.log(\"session_data:\", session_data);\n// Возврат как JSON-результат\nreturn [\n  {\n    json: {\n      session_data,\n      code,\n      error\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        -64
+      ],
+      "id": "e0c882f0-b4d3-43eb-8dbc-fbbe055ad3e8",
+      "name": "get session_data3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.output;\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nconsole.log(\"session_data:\", session_data);\n// Возврат как JSON-результат\nreturn [\n  {\n    json: {\n     session_data\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1056,
+        -192
+      ],
+      "id": "0d841f50-8195-4d9e-85f2-9b4976e52eae",
+      "name": "get session_data4"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "activation_codes",
+          "mode": "list",
+          "cachedResultName": "activation_codes"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "code",
+              "value": "={{ $json.msg_text }}"
+            }
+          ]
+        },
+        "options": {
+          "outputColumns": [
+            "*"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -752,
+        -240
+      ],
+      "id": "7087a032-a6ba-46db-80ae-9141df95013c",
+      "name": "Look for code",
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres n8n_apps account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "activation_codes",
+          "mode": "list",
+          "cachedResultName": "activation_codes"
+        },
+        "returnAll": true,
+        "options": {
+          "outputColumns": [
+            "code",
+            "user_id",
+            "is_shared",
+            "status"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1248,
+        -80
+      ],
+      "id": "051824e2-573b-45d9-b2fe-4d4230a46ee0",
+      "name": "List of all codes",
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres n8n_apps account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3519214d-d494-4704-83fc-946517b72217",
+              "leftValue": "={{ Object.keys($json).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        768,
+        -224
+      ],
+      "id": "3944b266-dd94-4058-95f5-01a71651d7d7",
+      "name": "If code added"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.msg_chat_id }}",
+        "text": "Код по промоакции не активирован",
+        "additionalFields": {}
+      },
+      "name": "Telegram Error - code not exist1",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        -64
+      ],
+      "id": "dc431d86-3d77-4deb-8305-2671499d68cf",
+      "webhookId": "9e16e9da-10bf-4f2d-b0a2-8549591ad302",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9d74cf11-72b6-4ce7-97cd-9cfe2b75a2cd",
+              "leftValue": "=is_shared",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -112,
+        -272
+      ],
+      "id": "85d6e774-2389-4f63-adff-0352f964698e",
+      "name": "If shared code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nconsole.log(\"session_data:\", session_data);\n\n// Возврат как JSON-результат\nreturn {\n  json: session_data\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        -224
+      ],
+      "id": "69f8d6e8-f7e7-44cd-b3d6-bb26cadb6a74",
+      "name": "get session_data5"
+    },
+    {
+      "parameters": {
+        "content": "Before insert code in table set start_tiem and end_time\n\nadd new code based on shared"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -16
+      ],
+      "id": "8e9380f5-4741-4319-bf3f-a6fad92886bd",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -992,
+        -528
+      ],
+      "id": "ace4765d-83ef-4bcf-8863-54027a9be11b",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "N8N continue",
+        "formDescription": "continue run code_activation Workflow",
+        "limitWaitTime": true,
+        "resumeAmount": 60,
+        "resumeUnit": "seconds",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -224,
+        544
+      ],
+      "id": "3fa05e59-999d-4b8d-8336-09707dcdbc2a",
+      "name": "Wait",
+      "webhookId": "556f6cea-aee0-405a-afaa-6f7c8f99d89c"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.output;\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nconsole.log(\"session_data:\", session_data);\n// Возврат как JSON-результат\nreturn {\n  json: session_data\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        192
+      ],
+      "id": "555f3ab5-15cf-47b7-83e7-924997f6dcf4",
+      "name": "get session_data6"
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log(\"SET USER DATA\");\n\n$execution.customData.set(\"msg_user_id\", $json.session_data.msg_user_id);\n$execution.customData.set(\"msg_chat_id\", $json.session_data.msg_chat_id);\n$execution.customData.set(\"msg_text\", $json.session_data.msg_text);\n\n\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\n// Логирование (необязательно)\nconsole.log(\"session_data:\", session_data);\n\n// Возврат как JSON-результат\nreturn {\n  json: session_data\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        -512
+      ],
+      "id": "1131ea97-e406-4385-95a1-59a317e00f08",
+      "name": "Сохранить данные о пользователи в контесте1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.output;\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nconsole.log(\"session_data:\", session_data);\n// Возврат как JSON-результат\nreturn {\n  json: session_data\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        -176
+      ],
+      "id": "2b331bd2-b800-420f-9dc0-c8eac045abfd",
+      "name": "get session_data7"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Чтение всех данных\nconst session_data = $execution.customData.getAll();\nconst code = $json.code;\nconst start_time = $json.start_time;\nconst end_time = $json.end_time;\nconst max_requests = $json.max_requests;\nconst max_input_tokens = $json.max_input_tokens;\nconst max_output_tokens = $json.max_output_tokens;\n\n\nconsole.log(\"session_data:\", session_data);\n\n// Возврат как JSON-результат\nreturn [\n  {\n    json: {\n      session_data,\n      code,\n      start_time,\n      end_time,\n      max_requests,\n      max_input_tokens,\n      max_output_tokens\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        -368
+      ],
+      "id": "63a5535c-10ae-459c-a8aa-664666df830c",
+      "name": "get session_data8"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "activation_codes",
+          "mode": "list",
+          "cachedResultName": "activation_codes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "code": "={{ $json.msg_text }}",
+            "user_id": "={{ $json.msg_user_id }}"
+          },
+          "matchingColumns": [
+            "code"
+          ],
+          "schema": [
+            {
+              "id": "code",
+              "displayName": "code",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_shared",
+              "displayName": "is_shared",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "start_time",
+              "displayName": "start_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "time",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "end_time",
+              "displayName": "end_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "time",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "max_requests",
+              "displayName": "max_requests",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "used_requests",
+              "displayName": "used_requests",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "max_input_tokens",
+              "displayName": "max_input_tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "used_input_tokens",
+              "displayName": "used_input_tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "max_output_tokens",
+              "displayName": "max_output_tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "used_output_tokens",
+              "displayName": "used_output_tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        592,
+        -176
+      ],
+      "id": "cca8a89a-954a-41d1-a84b-a181f5379370",
+      "name": "Update code for user",
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres n8n_apps account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "activation_codes",
+          "mode": "list",
+          "cachedResultName": "activation_codes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "is_shared": false,
+            "code": "={{ $json.code + '_shared_' + $json.session_data.msg_user_id }}",
+            "user_id": "={{$json.session_data.msg_user_id}}",
+            "used_requests": 0,
+            "used_input_tokens": 0,
+            "max_output_tokens": "={{ $json.max_output_tokens}}",
+            "used_output_tokens": 0,
+            "max_requests": "={{ $json.max_requests}}",
+            "max_input_tokens": "={{ $json.max_input_tokens}}",
+            "start_time": "={{ $json.start_time ? $json.start_time : null }}",
+            "end_time": "={{ $json.end_time ? $json.end_time : null }}",
+            "status": "ACTIVE"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "code",
+              "displayName": "code",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_shared",
+              "displayName": "is_shared",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "max_requests",
+              "displayName": "max_requests",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "used_requests",
+              "displayName": "used_requests",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "max_input_tokens",
+              "displayName": "max_input_tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "used_input_tokens",
+              "displayName": "used_input_tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "max_output_tokens",
+              "displayName": "max_output_tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "used_output_tokens",
+              "displayName": "used_output_tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "start_time",
+              "displayName": "start_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "end_time",
+              "displayName": "end_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        592,
+        -384
+      ],
+      "id": "d9efd7ab-ce0a-4c95-9a8c-495bc1b9936a",
+      "name": "Set using shared code to user",
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres n8n_apps account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "IF Code Exists": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get session_data6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set code to test": {
+      "main": [
+        [
+          {
+            "node": "Сохранить данные о пользователи в контесте",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "get session_data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get session_data1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If shared code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сохранить данные о пользователи в контесте": {
+      "main": [
+        [
+          {
+            "node": "List of all codes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get session_data": {
+      "main": [
+        [
+          {
+            "node": "Telegram Error - already used code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get session_data1": {
+      "main": [
+        [
+          {
+            "node": "Telegram Error - code deactivated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Error - code not exist": {
+      "main": [
+        [
+          {
+            "node": "get session_data3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Error - code deactivated": {
+      "main": [
+        [
+          {
+            "node": "get session_data3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Error - already used code": {
+      "main": [
+        [
+          {
+            "node": "get session_data3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get session_data2": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Код активирован",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get session_data3": {
+      "main": [
+        []
+      ]
+    },
+    "get session_data4": {
+      "main": [
+        [
+          {
+            "node": "Look for code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Look for code": {
+      "main": [
+        [
+          {
+            "node": "IF Code Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List of all codes": {
+      "main": [
+        [
+          {
+            "node": "get session_data4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If code added": {
+      "main": [
+        [
+          {
+            "node": "get session_data2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get session_data7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Error - code not exist1": {
+      "main": [
+        [
+          {
+            "node": "get session_data3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If shared code": {
+      "main": [
+        [
+          {
+            "node": "get session_data8",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get session_data5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get session_data5": {
+      "main": [
+        [
+          {
+            "node": "Update code for user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Сохранить данные о пользователи в контесте1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        []
+      ]
+    },
+    "get session_data6": {
+      "main": [
+        [
+          {
+            "node": "Telegram Error - code not exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сохранить данные о пользователи в контесте1": {
+      "main": [
+        [
+          {
+            "node": "Look for code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get session_data7": {
+      "main": [
+        [
+          {
+            "node": "Telegram Error - code not exist1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get session_data8": {
+      "main": [
+        [
+          {
+            "node": "Set using shared code to user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update code for user": {
+      "main": [
+        [
+          {
+            "node": "If code added",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set using shared code to user": {
+      "main": [
+        [
+          {
+            "node": "get session_data2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9c1f5099-cf83-43d3-be8e-70bc913e9798",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3dfb6978cf3399c7fbe84fecd9e1e067da1b213285b388b68830a40c8f3b0a6a"
+  },
+  "id": "8NPlBxMnBzlMFx7y",
+  "tags": []
+}

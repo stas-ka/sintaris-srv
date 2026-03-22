@@ -1,0 +1,276 @@
+{
+  "name": "Clinic Assistant with GPT Assistant API",
+  "nodes": [
+    {
+      "parameters": {
+        "functionCode": "item.client_id = $json[\"message\"][\"chat\"][\"id\"];\nitem.text = $json[\"message\"][\"text\"];\nreturn item;"
+      },
+      "name": "Extract Telegram Message",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "query": "SELECT thread_id FROM gpt_threads WHERE client_id = {{$json[\"client_id\"]}}"
+      },
+      "name": "Get Thread ID",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        400,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "2",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "if (items[0].json.thread_id) {\n  item.thread_id = items[0].json.thread_id;\n} else {\n  item.thread_id = null;\n}\nitem.client_id = $json[\"client_id\"];\nitem.text = $json[\"text\"];\nreturn item;"
+      },
+      "name": "Check If Thread Exists",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/threads",
+        "authentication": "predefinedCredentialType",
+        "method": "POST",
+        "responseFormat": "json",
+        "headers": [
+          {
+            "name": "Authorization",
+            "value": "Bearer YOUR_API_KEY"
+          }
+        ]
+      },
+      "name": "Create Thread if Needed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        800,
+        300
+      ],
+      "conditions": {
+        "boolean": [
+          {
+            "value1": "={{$json[\"thread_id\"]}}",
+            "operation": "isEmpty"
+          }
+        ]
+      }
+    },
+    {
+      "parameters": {
+        "query": "INSERT INTO gpt_threads (client_id, thread_id) VALUES ({{$json[\"client_id\"]}}, '={{$node[\"Create Thread if Needed\"].json.id}}') ON CONFLICT (client_id) DO UPDATE SET thread_id = EXCLUDED.thread_id"
+      },
+      "name": "Save Thread ID",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "2",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{\"https://api.openai.com/v1/threads/\" + $json[\"thread_id\"] + \"/messages\"}}",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "headers": [
+          {
+            "name": "Authorization",
+            "value": "Bearer YOUR_API_KEY"
+          }
+        ],
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": {
+          "role": "user",
+          "content": "={{$json[\"text\"]}}"
+        }
+      },
+      "name": "Send Message to Thread",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{\"https://api.openai.com/v1/threads/\" + $json[\"thread_id\"] + \"/runs\"}}",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "headers": [
+          {
+            "name": "Authorization",
+            "value": "Bearer YOUR_API_KEY"
+          }
+        ],
+        "jsonParameters": true,
+        "bodyParametersJson": {
+          "assistant_id": "asst_clinic_001"
+        }
+      },
+      "name": "Run Assistant",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{\"https://api.openai.com/v1/threads/\" + $json[\"thread_id\"] + \"/messages\"}}",
+        "authentication": "predefinedCredentialType",
+        "headers": [
+          {
+            "name": "Authorization",
+            "value": "Bearer YOUR_API_KEY"
+          }
+        ],
+        "method": "GET"
+      },
+      "name": "Get GPT Answer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json[\"client_id\"]}}",
+        "text": "\u041e\u0442\u0432\u0435\u0442: {{$json[\"data\"][0][\"content\"][0][\"text\"][\"value\"]}}"
+      },
+      "name": "Reply in Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Extract Telegram Message": {
+      "main": [
+        [
+          {
+            "node": "Get Thread ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Thread ID": {
+      "main": [
+        [
+          {
+            "node": "Check If Thread Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Thread Exists": {
+      "main": [
+        [
+          {
+            "node": "Create Thread if Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Thread if Needed": {
+      "main": [
+        [
+          {
+            "node": "Save Thread ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Thread ID": {
+      "main": [
+        [
+          {
+            "node": "Send Message to Thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Message to Thread": {
+      "main": [
+        [
+          {
+            "node": "Run Assistant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Assistant": {
+      "main": [
+        [
+          {
+            "node": "Get GPT Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get GPT Answer": {
+      "main": [
+        [
+          {
+            "node": "Reply in Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "5"
+}

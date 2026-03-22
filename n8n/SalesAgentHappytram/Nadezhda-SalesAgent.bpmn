@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+  id="Definitions_Razbor"
+  targetNamespace="http://example.bpmn">
+  <process id="Razbor" name="Разбор события" isExecutable="false">
+    <startEvent id="StartEvent_1" name="Вход события: РАЗБОР"/>
+    <userTask id="Task_1" name="Совет: 'Рада вас...' (от Надежды, есть свободное время?)"/>
+    <exclusiveGateway id="Gateway_1" name="Есть свободное время?"/>
+    <userTask id="Task_2" name="Выбор и написание ответа"/>
+    <serviceTask id="Task_3" name="Система проверяет, вносит в таблицу"/>
+    <sendTask id="Task_4" name="Отправить ответ-почту человеку"/>
+    <sendTask id="Task_5" name="Оповещение Надежде"/>
+    <intermediateCatchEvent id="Timer_1" name="Напоминание за день">
+      <timerEventDefinition/>
+    </intermediateCatchEvent>
+    <sendTask id="Task_6" name="Напоминание человеку"/>
+    <sendTask id="Task_7" name="Напоминание Надежде"/>
+    <endEvent id="EndEvent_1" name="Завершение"/>
+    <dataObjectReference id="Data_1" dataObjectRef="Table_1"/>
+    <dataObject id="Table_1" name="Таблица"/>
+    
+    <!-- Ablauf -->
+    <sequenceFlow id="flow1" sourceRef="StartEvent_1" targetRef="Task_1"/>
+    <sequenceFlow id="flow2" sourceRef="Task_1" targetRef="Gateway_1"/>
+    <sequenceFlow id="flow3" sourceRef="Gateway_1" targetRef="Task_2">
+      <conditionExpression xsi:type="tFormalExpression">да</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow4" sourceRef="Gateway_1" targetRef="EndEvent_1">
+      <conditionExpression xsi:type="tFormalExpression">нет</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow5" sourceRef="Task_2" targetRef="Task_3"/>
+    <sequenceFlow id="flow6" sourceRef="Task_3" targetRef="Task_4"/>
+    <sequenceFlow id="flow7" sourceRef="Task_3" targetRef="Task_5"/>
+    <sequenceFlow id="flow8" sourceRef="Task_4" targetRef="Timer_1"/>
+    <sequenceFlow id="flow9" sourceRef="Task_5" targetRef="Timer_1"/>
+    <sequenceFlow id="flow10" sourceRef="Timer_1" targetRef="Task_6"/>
+    <sequenceFlow id="flow11" sourceRef="Timer_1" targetRef="Task_7"/>
+    <sequenceFlow id="flow12" sourceRef="Task_6" targetRef="EndEvent_1"/>
+    <sequenceFlow id="flow13" sourceRef="Task_7" targetRef="EndEvent_1"/>
+    <!-- Datenobjekt-Anbindung -->
+    <dataInputAssociation id="DataAssoc_1">
+      <sourceRef>Task_3</sourceRef>
+      <targetRef>Data_1</targetRef>
+    </dataInputAssociation>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Razbor">
+    <bpmndi:BPMNPlane id="BPMNPlane_Razbor" bpmnElement="Razbor">
+      <bpmndi:BPMNShape id="Shape_StartEvent_1" bpmnElement="StartEvent_1">
+        <omgdc:Bounds x="60" y="150" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_1" bpmnElement="Task_1">
+        <omgdc:Bounds x="120" y="140" width="180" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_1" bpmnElement="Gateway_1">
+        <omgdc:Bounds x="340" y="150" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_2" bpmnElement="Task_2">
+        <omgdc:Bounds x="420" y="140" width="140" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_3" bpmnElement="Task_3">
+        <omgdc:Bounds x="590" y="140" width="160" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_4" bpmnElement="Task_4">
+        <omgdc:Bounds x="780" y="80" width="130" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_5" bpmnElement="Task_5">
+        <omgdc:Bounds x="780" y="210" width="130" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Timer_1" bpmnElement="Timer_1">
+        <omgdc:Bounds x="950" y="150" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_6" bpmnElement="Task_6">
+        <omgdc:Bounds x="1030" y="90" width="130" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_7" bpmnElement="Task_7">
+        <omgdc:Bounds x="1030" y="210" width="130" height="56"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_1" bpmnElement="EndEvent_1">
+        <omgdc:Bounds x="1200" y="150" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Data_1" bpmnElement="Data_1" isExpanded="false">
+        <omgdc:Bounds x="650" y="220" width="40" height="40"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_flow1" bpmnElement="flow1">
+        <omgdi:waypoint x="96" y="168"/>
+        <omgdi:waypoint x="120" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow2" bpmnElement="flow2">
+        <omgdi:waypoint x="300" y="168"/>
+        <omgdi:waypoint x="340" y="175"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow3" bpmnElement="flow3">
+        <omgdi:waypoint x="390" y="175"/>
+        <omgdi:waypoint x="420" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow4" bpmnElement="flow4">
+        <omgdi:waypoint x="365" y="200"/>
+        <omgdi:waypoint x="400" y="250"/>
+        <omgdi:waypoint x="1200" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow5" bpmnElement="flow5">
+        <omgdi:waypoint x="560" y="168"/>
+        <omgdi:waypoint x="590" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow6" bpmnElement="flow6">
+        <omgdi:waypoint x="750" y="168"/>
+        <omgdi:waypoint x="780" y="108"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow7" bpmnElement="flow7">
+        <omgdi:waypoint x="750" y="168"/>
+        <omgdi:waypoint x="780" y="238"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow8" bpmnElement="flow8">
+        <omgdi:waypoint x="910" y="108"/>
+        <omgdi:waypoint x="950" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow9" bpmnElement="flow9">
+        <omgdi:waypoint x="910" y="238"/>
+        <omgdi:waypoint x="950" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow10" bpmnElement="flow10">
+        <omgdi:waypoint x="986" y="168"/>
+        <omgdi:waypoint x="1030" y="118"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow11" bpmnElement="flow11">
+        <omgdi:waypoint x="986" y="168"/>
+        <omgdi:waypoint x="1030" y="238"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow12" bpmnElement="flow12">
+        <omgdi:waypoint x="1160" y="118"/>
+        <omgdi:waypoint x="1200" y="168"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow13" bpmnElement="flow13">
+        <omgdi:waypoint x="1160" y="238"/>
+        <omgdi:waypoint x="1200" y="168"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

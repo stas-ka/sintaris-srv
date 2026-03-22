@@ -1,0 +1,2143 @@
+{
+  "name": "Nutri assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "Ты — профессиональный консультант по оздоровлению организма через питание и прием БАДов,  который работает с продуктами LR Health&Beauty. Ты уверен в качестве продукции и по’тому смело рекомендуешь ее вводить в рацион питания для улучшения состояния здоровья и снижения веса. :: Ты рекомендуешь проверенные схемы и сочетания продуктов под проблемы, которые обозначил пользователь или ты сам выявил на основе диагностики.\n:: Перед началом работы предложи пользователю три вариант диагностики: \nУзнать о горо=мональных дисбалансах\nОценить возможные дефициты нутриентов в организме\nУзнать об общем состоянии организма\n:: В зависимости от выбора пользователя обращайся к своей базе данных: \nГормональные дисбалансы: раздел “Самодиагностика . Оцени свои гормоны. “ \nДефициты миронутриентов: раздел “ Тест на дефицит микронутриентов”. \nУзнать об общем состоянии организма: раздел “Smart-диагностика”.\n:: Проводи тестирование в формате диалога. Задай один вопрос, дождись ответ, задавай следующий вопрос.\n:: На основании ответов пользователя выдай ему мягкие рекомендации и подбери продукты от компании LR.\nТвоя задача — **давать ответы только на основе предоставленных тебе знаний** из базы данных (Postgres Knowledge Database), которая содержит проверенные научные рекомендации и рецепты.\n\n- Если пользователь спрашивает о рецептах или нутрициологических советах, всегда используй только ту информацию, которая находится в полученном контексте (Knowledge Base, Vector DB).\n- Не придумывай свои ответы и не делай выводов, которых нет в базе знаний.\n- Если на вопрос пользователя нет ответа в базе данных, так и скажи: “Извините, у меня нет информации по вашему вопросу.”\n- Не выдавай советы, если у тебя нет точного ответа из базы знаний.\n\n\n\n**Пример твоего ответа:**\n- После проведенного опроса: “На основании ваших ответов можно предположить, что  “\n- Если рецепт найден: “Вот подходящий рецепт: ... \\n\\n )”\n- Если данных нет: “К сожалению, у меня нет подходящего рецепта по вашему запросу.”\n\nВ конце верни переданный тебе prompt, на который ты ответил, включая все переданные тебе данные полученные от Tool и из контекста, полученные в виде запроса в формате: \n“*Для ответа использовался запрос и контекст)*:\n<сюда вставь весь использованный тобой prompt и данные, переданные тебе для ответа> “\\n\\n \n“*Для ответа я использовал следующую информацию из базы знаний:*\\n ...“\n\n\"*она хранилась в следующих файлах, документах из базы знаний:*\\n ...“\n\nОтвет и prompt всегда должны быть в формате **Markdown для Telegram (v1)**:\n- Избегай незакрытых символов (`*`, `_`, `[`).\n- Экранируй спецсимволы внутри данных и текста: `\\*`, `\\_`, ``\\` ``, `\\[`, `\\]`.\n---\nУбедись, что итоговый текст не вызывает ошибок при парсинге Telegram  в формате Markdown. Ограничь размер текста в 1500 символов\n",
+          "maxIterations": 5,
+          "returnIntermediateSteps": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -2336,
+        -576
+      ],
+      "id": "4c9bb9b5-b2e0-40b4-81ce-2e590f667e57",
+      "name": "AI Agent",
+      "notesInFlow": true,
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "gpt-3.5-turbo"
+        },
+        "options": {
+          "temperature": 0.7,
+          "topP": 1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2480,
+        -304
+      ],
+      "id": "8ca38dc8-8c7e-4cbf-aca1-cf184a302b91",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "ZMs5emvtSBVua9mY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2096,
+        -64
+      ],
+      "id": "ba38f9a0-7737-4a00-8543-4c84e2e4773c",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "ZMs5emvtSBVua9mY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -4432,
+        -464
+      ],
+      "id": "6126f9bd-1b8b-446d-bde1-1fa96aeb926e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    telegramOriginal: $json,\n    userInput: $json.message?.text || '',\n    username: $json.message?.from?.username || ''\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4928,
+        560
+      ],
+      "id": "9db8b845-4c10-4148-ae6c-2befea5d3497",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4f63e0b6-1140-4016-9533-57925253ab32",
+              "name": "telegramOriginal",
+              "value": "={{ $json.telegramOriginal }}",
+              "type": "object"
+            },
+            {
+              "id": "1a897961-967d-4878-8a7a-c675fb7f72f8",
+              "name": "userInput",
+              "value": "={{ $json.userInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5136,
+        560
+      ],
+      "id": "d096c53a-60b1-4c82-aec8-0e0db156be56",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5376,
+        432
+      ],
+      "id": "aa58c3aa-f25e-4aac-a0cb-49169d31c13c",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    tgrm_msg: $json.message}\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5120,
+        464
+      ],
+      "id": "5b40398c-dfda-4a18-b430-af94ddaed043",
+      "name": "Set data from telegram in tgrm_msg"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "acf8c8cb-15a9-4edd-8090-8fa3587f4473",
+              "name": "tgrm_msg.text",
+              "value": "Бледный цвет кожи",
+              "type": "string"
+            },
+            {
+              "id": "02a9bf9c-54e2-4c15-a6aa-1cf856a08323",
+              "name": "tgrm_msg.chat.id",
+              "value": "994963580",
+              "type": "string"
+            },
+            {
+              "id": "9c7b0a42-e4fc-4181-a172-6e862597a05b",
+              "name": "=tgrm_msg.from.id",
+              "value": "994963580",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4416,
+        544
+      ],
+      "id": "aee24fd2-fba6-41be-84db-9ed0666b7e8f",
+      "name": "Set test data for tgrm_msg"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json:  $execution.customData.get(\"msg_from_id\")\n  }\n];// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4624,
+        544
+      ],
+      "id": "a25a007e-0dbc-4843-98f6-5131cd640f7b",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "265998df-0277-4aa8-a9c8-f4141c1d8b2a",
+              "name": "output",
+              "value": "Ошибка записи данных о пользователи в базу данных ",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3664,
+        64
+      ],
+      "id": "45179311-64c0-447d-9e31-a9ec87a54636",
+      "name": "Edit Fields",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "sendChatAction",
+        "chatId": "={{ $json.msg_chat_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -3200,
+        -192
+      ],
+      "id": "16933981-2895-4ca4-9905-8e4362b76bc0",
+      "name": "Показать символ ...",
+      "webhookId": "9c235d95-5594-40cc-8609-3327df9f4d25",
+      "alwaysOutputData": false,
+      "notesInFlow": false,
+      "executeOnce": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.msg_text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "3ce89d69-4ffd-4b68-bfa3-12aa56ab8939"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9d548d02-bb27-4094-bcab-eb241cee565e",
+                    "leftValue": "={{ $json.msg_voice }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0c126a54-649a-47ab-a709-bc88f057b1d3",
+                    "leftValue": "={{ $json.msg_photo }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "photo"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "bc2bb82e-b00e-4cb7-9243-0d53b0ecc5f2",
+                    "leftValue": "={{$json.msg_document }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "document"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -4288,
+        -752
+      ],
+      "id": "9fda2823-3982-47f0-ba7f-04f721a6d894",
+      "name": "Фильтр текстовых запросов"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tgrm_user",
+          "mode": "list",
+          "cachedResultName": "tgrm_user"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "bot": "=0",
+            "id": "={{ $json.msg_user_id }}",
+            "chat_id": "={{ $json.msg_chat_id }}",
+            "user_name": "={{ $json.msg_username }}",
+            "first_name": "={{ $json.msg_user_first_name }}",
+            "active": "active"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "user_name",
+              "displayName": "user_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "full_name",
+              "displayName": "full_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "bot",
+              "displayName": "bot",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "desc",
+              "displayName": "desc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "start_params",
+              "displayName": "start_params",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "create_timestamp",
+              "displayName": "create_timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "last_action",
+              "displayName": "last_action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "active",
+              "displayName": "active",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -4224,
+        32
+      ],
+      "id": "b5594cc0-de1d-4bf9-bc04-3fcc4e6ba204",
+      "name": "Сохранить данные о пользователе в БД",
+      "alwaysOutputData": false,
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres n8n_apps account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log(\"HELLLLO\");\n$execution.customData.set(\"msg_text\", $json.message.text);\n$execution.customData.set(\"msg_chat_id\", $json.message.chat.id);\n$execution.customData.set(\"msg_user_id\",$json.message.from.id);\n//$execution.customData.set(\"msg_user_is_bot\",$json.message.from.is_bot);\n$execution.customData.set(\"msg_username\",$json.message.from.username);\n$execution.customData.set(\"msg_user_first_name\",$json.message.from.first_name);\n//$execution.customData.set(\"msg_from_last_name\",$json.message.from.last_name);\n//$execution.customData.set(\"msg_from_full_name\",$json.message.from.full_name);\n\n\n\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\n// Логирование (необязательно)\nconsole.log(\"CustomData:\", session_data);\n\n// Возврат как JSON-результат\nreturn {\n  json: session_data\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4784,
+        -464
+      ],
+      "id": "23ad034c-4a14-4116-ba49-8e8124b55d4a",
+      "name": "Сохранить данные о пользователи в контесте"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -5008,
+        -464
+      ],
+      "id": "044bc806-ae49-4f86-a96a-62578b863422",
+      "name": "Обработка ввода запроса/команды пользователя в телеграм",
+      "webhookId": "4daeddac-7c7c-4464-8a87-2bb1184da775",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -4336,
+        -240
+      ],
+      "id": "58fe9db0-a391-4f87-a405-94899c59d412",
+      "name": "Тестовая ветка для N8N"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.session_data.msg_chat_id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1488,
+        -432
+      ],
+      "id": "81cc7e47-5a44-4ba7-99dd-3018852c7792",
+      "name": "Ответ пользователю в телеграм",
+      "webhookId": "6bb06bb3-1d8c-40b4-8514-bccf8f570c6a",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "994963580",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1904,
+        128
+      ],
+      "id": "6f38178b-df44-4e99-aba5-60391d325a4d",
+      "name": "Послать сообщение об ошибке Администратору",
+      "webhookId": "826e1ee0-25b9-417b-88c7-1f542511a091",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.session_data.msg_chat_id }}",
+        "text": "Извините произошла ошибка",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1744,
+        -432
+      ],
+      "id": "341b8ef4-86e2-451f-a9cc-8bccfdcced3c",
+      "name": "Послать сообщение об ошибке пользователю",
+      "webhookId": "23362b6e-0640-45fc-8d47-02ea735ca2b9",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Привет, спроси меня, что хочешь по рецептам. Напиши вопрос внизу",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2736,
+        -1024
+      ],
+      "id": "4f4b3c7d-da49-4756-ab67-39b5e7648ebc",
+      "name": "Послать приветствие после start",
+      "webhookId": "79ccb1ef-b863-4ae0-b942-4b4d831f2d31",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputText = $json.output || $json.text || $json.message || \"\";\n\nfunction closeUnmatchedSymbols(text, symbol) {\n  const count = (text.match(new RegExp(`\\\\${symbol}`, 'g')) || []).length;\n  // Wenn ungerade Anzahl -> fehlt ein Abschlusszeichen\n  if (count % 2 !== 0) {\n    return text + symbol;\n  }\n  return text;\n}\n\n// Für alle typischen Markdown-V1-Symbole prüfen:\nlet safeText = inputText;\n['*', '_', '`'].forEach((symbol) => {\n  safeText = closeUnmatchedSymbols(safeText, symbol);\n});\n\n// Für []-Klammern extra check:\nconst openBrackets = (safeText.match(/\\[/g) || []).length;\nconst closeBrackets = (safeText.match(/\\]/g) || []).length;\nif (openBrackets > closeBrackets) {\n  safeText += ']';\n} else if (closeBrackets > openBrackets) {\n  safeText = '[' + safeText;\n}\n\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nconsole.log(\"session_data:\", session_data);\n// Возврат как JSON-результат\nconst text =safeText;\nreturn [\n  {\n    json: {\n      text,\n      session_data\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1824,
+        -624
+      ],
+      "id": "67f28805-3505-4066-b285-dd5581786c32",
+      "name": "Коррекция текста для формата Markdown v1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Используй информацию о нутрициологии и рецептах из Postgres Knowledge Base, Vector DB ",
+        "tableName": "rag_nutri_documents",
+        "options": {
+          "distanceStrategy": "cosine"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        -2208,
+        -208
+      ],
+      "id": "d3eaadb8-9be2-489e-881c-f5e5df604a7e",
+      "name": "Postgres Knowledge Database",
+      "notesInFlow": false,
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres n8n_apps account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Чтение всех данных\nconst session_data = $execution.customData.getAll();\nconst input_text =  session_data.msg_text;\n\nconsole.log(\"session_data:\", session_data);\nconst system_message = input_text;\n// Возврат как JSON-результат\nconst text = input_text;\nreturn [\n  {\n    json: {\n      text,\n      session_data,\n      system_message\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2768,
+        -272
+      ],
+      "id": "4ec608ff-a411-41b8-a795-022b2508e2a5",
+      "name": "Коррекция текста для формата Markdown v",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.output;\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nconsole.log(\"session_data:\", session_data);\n// Возврат как JSON-результат\nreturn [\n  {\n    json: {\n      text,\n      session_data\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1904,
+        -480
+      ],
+      "id": "ea7b7ede-5ece-48b2-aeb4-e221a0b4c7cd",
+      "name": "get session_data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.output;\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nconsole.log(\"session_data:\", session_data);\n// Возврат как JSON-результат\nreturn [\n  {\n    json: {\n      text,\n      session_data\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2512,
+        288
+      ],
+      "id": "3b48d637-19ca-46fb-9499-239090acbc38",
+      "name": "get session_data1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ac2d2861-1c0e-4c3b-ae4e-abebcd686096",
+              "name": "text",
+              "value": "={{ '[ERROR2ADMIN] Произошла ошибка при обработке данных\\nСессия:\\n' + JSON.stringify($json.session_data, null, 2)  + '\\n Text:\\n'+ JSON.stringify($json.text, null, 2) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2272,
+        240
+      ],
+      "id": "a37dffe4-1f81-45fd-a3e3-fabcc480d912",
+      "name": "Сформировать сообщение об ошибке"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "{{$json.session_data.msg_from_id}}",
+        "tableName": "InteligentNutritionist_bot_chat_histories"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -2352,
+        -256
+      ],
+      "id": "beb3ee9f-0d6c-41dc-818b-adac3cfd6c40",
+      "name": "Postgres Chat Memory",
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres n8n_apps account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "$execution.customData.set(\"msg_text\", \"Бледный цвет кожи\");\n$execution.customData.set(\"msg_chat_id\", \"994963580\");\n$execution.customData.set(\"msg_user_id\",\"994963580\");\n\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nconsole.log(\"CustomData:\", session_data);\n// Возврат как JSON-результат\nreturn {\n  json: session_data\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4096,
+        -176
+      ],
+      "id": "ad3175ed-b14e-46ad-add0-27fe02b8c16d",
+      "name": "Задать тестовых данных"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6bcded11-00f1-451a-bfd5-1e437c653241",
+              "leftValue": "={{ $json.msg_text}}",
+              "rightValue": "/code_activation",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              }
+            },
+            {
+              "id": "2869e894-f54d-4162-a33d-421b3abb4ad7",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -5888,
+        -224
+      ],
+      "id": "313d2cb1-4899-404e-834b-d41fa5d01211",
+      "name": "Исполнена команда /code_activation?"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.msg_text }}",
+                    "rightValue": "/",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "3ce89d69-4ffd-4b68-bfa3-12aa56ab8939"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "/command"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "user text",
+          "allMatchingOutputs": true
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -4016,
+        -768
+      ],
+      "id": "9f29fc9b-1ea6-467a-b421-4844387109a4",
+      "name": "Фильтр текстовых запросов1"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "8NPlBxMnBzlMFx7y",
+          "mode": "list",
+          "cachedResultName": "user_code_activation"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -3200,
+        -624
+      ],
+      "id": "65db2987-b846-4bf9-b884-040447a97646",
+      "name": "Execute Workflow user_code_activation"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "Введите код и нажмите на кнопку отправить справа",
+        "additionalFields": {}
+      },
+      "name": "Введите код",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        -2768,
+        -816
+      ],
+      "id": "01a9327b-4a90-4b46-950e-14c15378cc12",
+      "webhookId": "35bc4f0c-31b3-4433-ad25-7859c84cb000",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.last_action}}",
+                    "rightValue": "/code_activation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "aa640e95-9f19-47fe-99be-f5817a92daf9"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "/code_activation"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -3664,
+        -560
+      ],
+      "id": "c569a181-7e4c-4b3c-8d74-159c065a0f9b",
+      "name": "Switch to actions handling"
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log(\"notice action\");\n\n$execution.customData.set(\"action\", \"\");\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\n// Логирование (необязательно)\nconsole.log(\"session_data:\", session_data);\n\n// Возврат как JSON-результат\nreturn {\n  json: session_data\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3200,
+        -480
+      ],
+      "id": "5b92e696-7d0d-4499-b443-c1bba8713df7",
+      "name": "Notice action empty"
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log(\"notice action\");\nconsole.log($execution.customData.get(\"action\"));\n\n\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4592,
+        -560
+      ],
+      "id": "9dd9d47c-f5f9-47d3-a786-efe50b4b13b1",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tgrm_user",
+          "mode": "list",
+          "cachedResultName": "tgrm_user"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.msg_user_id }}",
+            "last_action": "={{ $json.msg_text }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "user_name",
+              "displayName": "user_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "full_name",
+              "displayName": "full_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "bot",
+              "displayName": "bot",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "desc",
+              "displayName": "desc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "start_params",
+              "displayName": "start_params",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "create_timestamp",
+              "displayName": "create_timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "last_action",
+              "displayName": "last_action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "active",
+              "displayName": "active",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -3568,
+        -800
+      ],
+      "id": "32653b62-8e67-444c-9f09-cbaba69c5cb4",
+      "name": "Update action for user",
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres n8n_apps account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tgrm_user",
+          "mode": "list",
+          "cachedResultName": "tgrm_user"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $execution.customData.get(\"msg_user_id\")}}",
+            "last_action": "={{ $json.msg_text }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "user_name",
+              "displayName": "user_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "first_name",
+              "displayName": "first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "last_name",
+              "displayName": "last_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "full_name",
+              "displayName": "full_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "bot",
+              "displayName": "bot",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "desc",
+              "displayName": "desc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "start_params",
+              "displayName": "start_params",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "create_timestamp",
+              "displayName": "create_timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "last_action",
+              "displayName": "last_action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "active",
+              "displayName": "active",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -3488,
+        -512
+      ],
+      "id": "df31d07b-b042-456c-bc41-878458d4f4f0",
+      "name": "Update action for user1",
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres n8n_apps account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.session_data.msg_chat_id }}",
+        "text": "=Неизвестная команда",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2960,
+        -720
+      ],
+      "id": "034c673e-d87c-4a01-ac47-298751674d5f",
+      "name": "Ответ пользователю Неизвестная команда",
+      "webhookId": "6bb06bb3-1d8c-40b4-8514-bccf8f570c6a",
+      "credentials": {
+        "telegramApi": {
+          "id": "EeUHvVCOEPc0kw7b",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.last_action }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "3ce89d69-4ffd-4b68-bfa3-12aa56ab8939"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "/start"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9d548d02-bb27-4094-bcab-eb241cee565e",
+                    "leftValue": "={{ $json.last_action }}",
+                    "rightValue": "/code_activation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "/code_activation"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "unknown_command",
+          "allMatchingOutputs": true
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -3296,
+        -816
+      ],
+      "id": "a0610a7a-38ec-42d1-9932-8d0f2281e727",
+      "name": "Фильтр комманд"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.output;\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\nmsg_user_id = Number($json.msg_user_id);\n\nconsole.log(\"session_data:\", session_data);\n// Возврат как JSON-результат\nreturn [\n  {\n    json: {\n      session_data,\n      msg_user_id\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3984,
+        -464
+      ],
+      "id": "1504d29b-7164-44a2-b352-876ed413f64e",
+      "name": "get session_data2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const code = $input.first().json.output;\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\n\nconsole.log(\"session_data:\", session_data);\n// Возврат как JSON-результат\nreturn [\n  {\n    json: {\n      session_data\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3440,
+        -656
+      ],
+      "id": "9b8a0375-9bf1-4e9a-8d2a-93588f46518c",
+      "name": "get session_data3"
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log(\"notice action\");\n\n$execution.customData.set(\"action\", \"\");\n// Чтение всех данных\nconst session_data = $execution.customData.getAll();\n\n// Логирование (необязательно)\nconsole.log(\"CustomData:\", session_data);\n\n// Возврат как JSON-результат\nreturn {\n  json: session_data\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3008,
+        -560
+      ],
+      "id": "8cfba748-782e-499e-971f-62de789f0876",
+      "name": "Notice action empty1"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tgrm_user",
+          "mode": "list",
+          "cachedResultName": "tgrm_user"
+        },
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "id",
+              "value": "={{$json.msg_user_id}}"
+            }
+          ]
+        },
+        "options": {
+          "outputColumns": [
+            "id",
+            "last_action"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -3808,
+        -528
+      ],
+      "id": "8a79e6a3-ea87-4f7e-9035-051ff58e221a",
+      "name": "Select last_action ",
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres n8n_apps account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "activation_codes",
+          "mode": "list",
+          "cachedResultName": "activation_codes"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "status",
+              "condition": "LIKE",
+              "value": "ACTIVE"
+            },
+            {
+              "column": "user_id",
+              "value": "={{ $json.session_data_msg_user_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -3888,
+        -176
+      ],
+      "id": "67e0f3d6-a2cc-4317-ad03-9da0a67e0cb5",
+      "name": "Select rows from a table",
+      "credentials": {
+        "postgres": {
+          "id": "mkZC1CCeZBPRrf3o",
+          "name": "Postgres n8n_apps account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "# Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor item in _input.all():\n  item.json.myNewField = 1\n  expired_reason = None\n    \n                # Проверяем время действия, если задано\n                if (data.start_time and data.start_time > now): \n                    expired_reason = \"start_time in future\"\n                elif (data.end_time and now > data.end_time):\n                    expired_reason = \"end_time passed\"\n    \n                # Проверяем лимит по количеству запросов\n                if data.max_requests is not None and (data.used_requests or 0) >= data.max_requests:\n                    expired_reason = \"max_requests reached\"\n                    \n                # Проверяем лимит по input tokens\n                if data.max_input_tokens is not None and (data.used_input_tokens or 0) >= data.max_input_tokens:\n                    expired_reason = \"max_input_tokens reached\"\n    \n                # Проверяем лимит по output tokens\n                if data.max_output_tokens is not None and (data.used_output_tokens or 0) >= data.max_output_tokens:\n                    expired_reason = \"max_output_tokens reached\"\n    \n                if not expired_reason: # ✅ Код подходит\n                    logger.info(f\"[{user_id}] - Code {data.code} is not expired and can be used.\")\n                    return data.code\n                # Setze entsprechenden Status\n                if expired_reason:\n                    logger.info(f\"[{user_id}] - Code {data.code} expired: {expired_reason}\")\n                    DBAccess.deactivate_activation_code(data.code, BotConstants.EXPIRED_STATUS_VALUE)\nreturn _input.all()"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3680,
+        -176
+      ],
+      "id": "affb9a3e-73d5-4576-9870-d101d66a987d",
+      "name": "Code3"
+    }
+  ],
+  "pinData": {
+    "Обработка ввода запроса/команды пользователя в телеграм": [
+      {
+        "json": {
+          "update_id": 940395237,
+          "message": {
+            "message_id": 549,
+            "from": {
+              "id": 994963580,
+              "is_bot": false,
+              "first_name": "SU",
+              "username": "su730800",
+              "language_code": "en"
+            },
+            "chat": {
+              "id": 994963580,
+              "first_name": "SU",
+              "username": "su730800",
+              "type": "private"
+            },
+            "date": 1754337857,
+            "text": "123"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Postgres Knowledge Database",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Фильтр текстовых запросов",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Коррекция текста для формата Markdown v1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get session_data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "get session_data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        []
+      ]
+    },
+    "Set data from telegram in tgrm_msg": {
+      "main": [
+        []
+      ]
+    },
+    "Set test data for tgrm_msg": {
+      "main": [
+        []
+      ]
+    },
+    "Code2": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "get session_data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Показать символ ...": {
+      "main": [
+        [
+          {
+            "node": "Коррекция текста для формата Markdown v",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Фильтр текстовых запросов": {
+      "main": [
+        [
+          {
+            "node": "Фильтр текстовых запросов1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сохранить данные о пользователе в БД": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сохранить данные о пользователи в контесте": {
+      "main": [
+        [
+          {
+            "node": "Сохранить данные о пользователе в БД",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Обработка ввода запроса/команды пользователя в телеграм": {
+      "main": [
+        [
+          {
+            "node": "Сохранить данные о пользователи в контесте",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Тестовая ветка для N8N": {
+      "main": [
+        [
+          {
+            "node": "Задать тестовых данных",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ответ пользователю в телеграм": {
+      "main": [
+        [],
+        [
+          {
+            "node": "get session_data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "get session_data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Послать сообщение об ошибке Администратору": {
+      "main": [
+        []
+      ]
+    },
+    "Послать приветствие после start": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Коррекция текста для формата Markdown v1": {
+      "main": [
+        [
+          {
+            "node": "Ответ пользователю в телеграм",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Knowledge Database": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Коррекция текста для формата Markdown v": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get session_data": {
+      "main": [
+        [
+          {
+            "node": "Послать сообщение об ошибке пользователю",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get session_data1": {
+      "main": [
+        [
+          {
+            "node": "Сформировать сообщение об ошибке",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сформировать сообщение об ошибке": {
+      "main": [
+        [
+          {
+            "node": "Послать сообщение об ошибке Администратору",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Задать тестовых данных": {
+      "main": [
+        [
+          {
+            "node": "Select rows from a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Послать сообщение об ошибке пользователю": {
+      "main": [
+        []
+      ]
+    },
+    "Фильтр текстовых запросов1": {
+      "main": [
+        [
+          {
+            "node": "Update action for user",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get session_data2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow user_code_activation": {
+      "main": [
+        [
+          {
+            "node": "Notice action empty1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Введите код": {
+      "main": [
+        []
+      ]
+    },
+    "Switch to actions handling": {
+      "main": [
+        [
+          {
+            "node": "get session_data3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update action for user1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notice action empty": {
+      "main": [
+        [
+          {
+            "node": "Показать символ ...",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Update action for user": {
+      "main": [
+        [
+          {
+            "node": "Фильтр комманд",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update action for user1": {
+      "main": [
+        [
+          {
+            "node": "Notice action empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Фильтр комманд": {
+      "main": [
+        [
+          {
+            "node": "Послать приветствие после start",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Введите код",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ответ пользователю Неизвестная команда",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get session_data2": {
+      "main": [
+        [
+          {
+            "node": "Select last_action ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get session_data3": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow user_code_activation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select last_action ": {
+      "main": [
+        [
+          {
+            "node": "Switch to actions handling",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "Показать символ ...",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "555398d2-960f-48d9-828e-1f0e52a11f28",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3dfb6978cf3399c7fbe84fecd9e1e067da1b213285b388b68830a40c8f3b0a6a"
+  },
+  "id": "WoyBWgHRfFN3XuNj",
+  "tags": [
+    {
+      "createdAt": "2025-07-07T19:23:25.810Z",
+      "updatedAt": "2025-07-07T19:23:25.810Z",
+      "id": "3HiknJDJv9SkqRic",
+      "name": "Current"
+    }
+  ]
+}
