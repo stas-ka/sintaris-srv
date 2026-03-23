@@ -27,39 +27,69 @@ The script:
 
 ## Configuration
 
-Edit `~/.taris/bot.env` (created by install script):
+Edit `~/.taris/bot.env` (created by install script). Key sections:
 
 ```bash
 # Telegram
-TELEGRAM_TOKEN=<bot token from @BotFather>
-TELEGRAM_ADMIN_USER_ID=994963580
+BOT_TOKEN=<bot token from @BotFather>
+ALLOWED_USERS=<comma-separated Telegram chat IDs>
+ADMIN_USERS=<admin chat IDs>
 
-# LLM Provider (openrouter / openai / yandex / gemini / anthropic / local)
-LLM_PROVIDER=openrouter
-OPENROUTER_API_KEY=<key>
-
-# Optional: OpenAI
+# LLM Provider (openai | gemini | anthropic | yandexgpt | local)
+LLM_PROVIDER=openai
 OPENAI_API_KEY=<key>
+OPENAI_BASE_URL=https://openrouter.ai/api/v1   # use OpenRouter as proxy
+OPENAI_MODEL=openai/gpt-4o-mini
 
-# Database (PostgreSQL)
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=openclaw
-DB_USER=openclaw_user
-DB_PASS=<password>
+# Storage backend
+STORE_BACKEND=postgres
+STORE_PG_DSN=postgresql://taris:taris_openclaw_2026@localhost:5432/taris
+```
+
+### Sintaris Services Access
+
+Add to `bot.env` to enable OpenClaw to interact with local and VPS services:
+
+```bash
+# Nextcloud (VPS)
+NEXTCLOUD_URL=https://cloud.dev2null.de
+NEXTCLOUD_USER=<nextcloud username>
+NEXTCLOUD_PASS=<app password>
+
+# N8N local dev instance
+N8N_LOCAL_URL=http://localhost:5678
+N8N_LOCAL_API_KEY=<jwt api key from N8N Settings → API>
+
+# N8N VPS instance (basic auth — user management disabled on v2.2.3)
+N8N_VPS_URL=https://automata.dev2null.de
+N8N_VPS_USER=admin
+N8N_VPS_PASS=<password>
+
+# EspoCRM (VPS, port 8888)
+ESPOCRM_URL=http://dev2null.de:8888
+ESPOCRM_USER=admin
+# ESPOCRM_PASS — stored separately, see .credentials/
+
+# PostgreSQL for apps/workflows (local)
+PG_LOCAL_DSN=postgresql://n8n_user:N8Nzusammen2019@localhost:5432/n8n_apps
 ```
 
 ## Database Setup
 
-OpenClaw uses PostgreSQL (the local-dev stack from `02-local-dev-environment.md`):
+OpenClaw uses a dedicated `taris` database in the local-dev PostgreSQL stack:
 
 ```bash
 cd ~/projects/sintaris-srv/local-dev
-docker compose exec postgres psql -U postgres <<EOF
-CREATE USER openclaw_user WITH PASSWORD '<password>';
-CREATE DATABASE openclaw OWNER openclaw_user;
-GRANT ALL PRIVILEGES ON DATABASE openclaw TO openclaw_user;
-EOF
+docker compose exec postgres psql -U postgres -c "CREATE USER taris WITH PASSWORD 'taris_openclaw_2026';"
+docker compose exec postgres psql -U postgres -c "CREATE DATABASE taris OWNER taris;"
+docker compose exec postgres psql -d taris -U postgres -c "CREATE EXTENSION IF NOT EXISTS vector;"
+```
+
+On VPS PostgreSQL (for when OpenClaw runs on server):
+```bash
+sudo -u postgres createuser taris --pwprompt   # use: taris_openclaw_2026
+sudo -u postgres createdb taris --owner=taris
+sudo -u postgres psql -d taris -c "CREATE EXTENSION IF NOT EXISTS vector;"
 ```
 
 ## Running
