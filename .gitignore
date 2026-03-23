@@ -1,2 +1,5 @@
 .env
+local-dev/.env
 client_secret*.json
+*.token
+*.secret

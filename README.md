@@ -1,19 +1,29 @@
 # sintaris-srv
 
-Administration and tooling for the Sintaris VPS server.
+Administration, tooling and AI infrastructure for the Sintaris server.
 
 ## Subprojects
 
 | Directory | Description |
 |-----------|-------------|
-| [vps-admin](./vps-admin/) | GitHub Copilot workspace for administering the VPS (nginx, PostgreSQL, n8n, WordPress, EspoCRM, Nextcloud, mail server) |
+| [vps-admin](./vps-admin/) | GitHub Copilot workspace for administering the VPS (nginx, PostgreSQL, n8n, EspoCRM, Nextcloud, mail) |
+| [sinta-openclaw](./sinta-openclaw/) | OpenClaw AI gateway — skills, systemd services, MCP server, install guide |
+| [local-dev](./local-dev/) | Local Docker stack: PostgreSQL 17 + pgvector + N8N |
+| [docs](./docs/) | Installation guide and infrastructure documentation |
+| [n8n](./n8n/) | N8N workflow exports and project files |
 
 ## Setup
 
-Copy `.env.example` to `.env` and fill in your server credentials:
-
 ```bash
-cp .env.example .env
+# 1. VPS credentials
+cp .env.example .env   # fill in VPS_HOST, VPS_USER, VPS_PASS
+
+# 2. Local dev stack
+cd local-dev && cp .env.example .env   # fill in DB passwords
+docker compose up -d
+
+# 3. OpenClaw AI gateway
+cd sinta-openclaw && bash scripts/setup.sh
 ```
 
-> `.env` is gitignored and must never be committed.
+> All `.env` files are gitignored — never commit them.
