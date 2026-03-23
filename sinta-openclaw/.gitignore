@@ -1,0 +1,12 @@
+# sinta-openclaw — gitignore
+
+# N8N API keys (sensitive — never commit)
+skills/skill-n8n/api-keys.txt
+
+# Any local credentials or tokens
+*.token
+*.secret
+credentials.json
+
+# MCP node_modules (installed locally)
+mcp/node_modules/

@@ -85,13 +85,35 @@ ssh ${VPS_USER}@${VPS_HOST} 'sudo ufw status verbose'
 - PostfixAdmin: `https://mail.dev2null.de/admin/` — manage all mailboxes here
 - Mail stored as Maildir in `/var/mail/vhosts/<domain>/<user>/`
 
+## OpenClaw (Local AI Gateway)
+
+OpenClaw is the local AI gateway (Node.js). **Not** picoclaw (Python bot — leave that untouched).
+
+- **Project:** `../sinta-openclaw/` — all OpenClaw artifacts live here
+- **Config:** `~/.openclaw/openclaw.json` — secrets not in git
+- **Skills:** `../sinta-openclaw/skills/` symlinked to `~/.openclaw/skills/`
+- **Services:** `openclaw-gateway.service`, `openclaw-tunnel.service` (systemd user services)
+- **Web UI:** https://agents.sintaris.net/openclaw/
+- **MCP server:** `~/.local/lib/openclaw-mcp/server.mjs` (source in `../sinta-openclaw/mcp/`)
+- **Architecture:** `../sinta-openclaw/docs/architecture.md`
+- **Install guide:** `../sinta-openclaw/docs/install.md`
+
+### When working on OpenClaw:
+- New skill → create in `../sinta-openclaw/skills/skill-xxx/SKILL.md`, symlink to `~/.openclaw/skills/`
+- Config change → use `openclaw config set key value`, update `../sinta-openclaw/config/openclaw.json.template`
+- New service → copy template to `../sinta-openclaw/systemd/`, install to `~/.config/systemd/user/`
+- **Always update** `../sinta-openclaw/docs/architecture.md` after any structural change
+
 ## Documentation Rule
 
-**Always update `../docs/` when installing or configuring a new service, tool, or infrastructure component.**
+**Always update docs when installing or configuring a new service, tool, or infrastructure component.**
 
-- New VPS service → update `../docs/03-vps-server-setup.md`
-- New N8N config → update `../docs/05-n8n-vps-setup.md`
-- New local tool → update the relevant file in `../docs/`
-- Completely new component → create a new numbered file in `../docs/`
+| What changed | Where to update |
+|---|---|
+| VPS service | `../docs/03-vps-server-setup.md` |
+| N8N config | `../docs/05-n8n-vps-setup.md` |
+| OpenClaw skill / integration | `../sinta-openclaw/docs/architecture.md` + `../sinta-openclaw/docs/install.md` |
+| New local tool | Relevant file in `../docs/` |
+| Completely new component | New file in `../docs/` or `../sinta-openclaw/docs/` |
 
 The guide index is at `../docs/index.md`.

@@ -10,7 +10,7 @@ Keep it up to date whenever a new service or tool is installed.
 | [01-github-setup.md](01-github-setup.md) | GitHub CLI, SSH keys, repository structure |
 | [02-local-dev-environment.md](02-local-dev-environment.md) | Local Docker dev stack (PostgreSQL + N8N) |
 | [03-vps-server-setup.md](03-vps-server-setup.md) | VPS: nginx, mail server, PostfixAdmin |
-| [04-openclaw-setup.md](04-openclaw-setup.md) | OpenClaw / picoclaw local assistant |
+| [04-openclaw-setup.md](04-openclaw-setup.md) | OpenClaw AI gateway (Node.js) — see also `../sinta-openclaw/` |
 | [05-n8n-vps-setup.md](05-n8n-vps-setup.md) | N8N production setup on VPS |
 
 ## Infrastructure Overview
@@ -19,6 +19,7 @@ Keep it up to date whenever a new service or tool is installed.
 Local machine (this computer)
   └── sintaris-srv/          git repo
         ├── local-dev/       Docker: PostgreSQL + N8N (localhost:5678)
+        ├── sinta-openclaw/  OpenClaw AI gateway (Node.js) — skills, services, MCP
         ├── vps-admin/       Copilot instructions for VPS management
         ├── docs/            This installation guide
         ├── n8n/             N8N workflow exports

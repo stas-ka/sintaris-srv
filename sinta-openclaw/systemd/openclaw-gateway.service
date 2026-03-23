@@ -1,0 +1,12 @@
+[Unit]
+Description=OpenClaw Gateway Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/stas/.local/bin/openclaw gateway
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
