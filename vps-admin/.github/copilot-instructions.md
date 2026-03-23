@@ -77,8 +77,21 @@ ssh ${VPS_USER}@${VPS_HOST} 'sudo ufw status verbose'
 
 ## Notes
 
-- n8n likely runs as a systemd service or via Docker — verify with `systemctl status n8n` or `docker ps`
+- n8n runs in Docker at `/opt/n8n-docker/` — manage with `sudo docker compose`
+- EspoCRM runs in Docker (`docker ps | grep espo`) at `crm.dev2null.de`
 - Nextcloud config: `/var/www/nextcloud/config/config.php` or Docker volume
 - WordPress sites: typically under `/var/www/`
-- EspoCRM: typically under `/var/www/`
 - SSL certificates: managed by Let's Encrypt (`/etc/letsencrypt/`)
+- PostfixAdmin: `https://mail.dev2null.de/admin/` — manage all mailboxes here
+- Mail stored as Maildir in `/var/mail/vhosts/<domain>/<user>/`
+
+## Documentation Rule
+
+**Always update `../docs/` when installing or configuring a new service, tool, or infrastructure component.**
+
+- New VPS service → update `../docs/03-vps-server-setup.md`
+- New N8N config → update `../docs/05-n8n-vps-setup.md`
+- New local tool → update the relevant file in `../docs/`
+- Completely new component → create a new numbered file in `../docs/`
+
+The guide index is at `../docs/index.md`.
