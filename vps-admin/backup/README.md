@@ -243,90 +243,74 @@ The server rolls back to the exact snapshot state and reboots. No reinstall need
 > Faster to restore than file-level backup — full server state in one step.  
 > Complements (does NOT replace) the file-level `backup.sh`.
 
-### Supported providers
+### Important: snapshots are manual
 
-| Server | Provider | Method |
-|--------|----------|--------|
-| dev2null.de | Netcup | SCP API — fully automated (Copy-on-Write snapshots) |
-| dev2null.website | IONOS VPS | **Manual** via https://my.ionos.com — no public REST API |
-| dev2null.website | IONOS Cloud | IONOS Cloud API — if/when migrated to IONOS Cloud |
+Neither Netcup nor IONOS exposes a public REST API for VPS snapshot management.  
+Snapshots must be created via each provider's web control panel.
 
-### Setup
+| Server | Provider | Control panel |
+|--------|----------|---------------|
+| dev2null.de | Netcup | https://www.servercontrolpanel.de |
+| dev2null.website | IONOS VPS | https://my.ionos.com |
 
-Add credentials to `../.env` (root of `sintaris-srv`):
+### `image-backup.py` — guide and tracker
 
-```bash
-# Netcup — get from https://www.customercontrolpanel.de → Master Data → API
-NETCUP_CUSTOMER_ID=your_customer_number
-NETCUP_API_KEY=your_api_key
-NETCUP_API_PASS=your_api_password
-NETCUP_SERVER_NAME=v1234567        # shown in SCP panel
-
-# IONOS Cloud — only for IONOS Cloud DCD servers
-# get from https://dcd.ionos.com → Management → API Keys
-IONOS_API_TOKEN=your_token
-IONOS_SERVER_ID=your_server_uuid
-IONOS_DATACENTER_ID=your_dc_uuid
-```
-
-**Getting Netcup API credentials:**
-1. Log in to https://www.customercontrolpanel.de
-2. Go to **Master Data → API → Manage API keys**
-3. Create a new API key — note the Key and Password
-4. Your customer number is displayed top-right
-5. Your server name is shown in https://www.servercontrolpanel.de
-
-### Usage
+`image-backup.py` helps you manage the process:
+- Shows step-by-step instructions per provider
+- Sends Telegram reminders to take snapshots
+- Records a local history log so you know when snapshots were last taken
 
 ```bash
 cd vps-admin/backup
 
-# Check which credentials are configured
+# Show instructions for each provider
+python3 image-backup.py guide
+python3 image-backup.py guide --server netcup
+
+# Send Telegram reminder (includes last snapshot age)
+python3 image-backup.py remind
+
+# Record a snapshot you just took manually
+python3 image-backup.py log --server netcup --snapshot copilot-2026-03-25
+python3 image-backup.py log --server ionos  --snapshot backup-2026-03-25
+
+# Show status (last recorded snapshots per server)
 python3 image-backup.py status
-
-# Create snapshot
-python3 image-backup.py create                         # both servers
-python3 image-backup.py create --server netcup         # dev2null.de only
-python3 image-backup.py create --description "pre-upgrade-2026-03-25"
-
-# List existing snapshots
-python3 image-backup.py list
-python3 image-backup.py list --server netcup
-
-# Restore from snapshot (interactive confirmation required)
-python3 image-backup.py restore --server netcup --snapshot copilot-2026-03-25
-
-# Delete old snapshot
-python3 image-backup.py delete --server netcup --snapshot copilot-2026-03-24
 ```
 
-### IONOS VPS — Manual procedure
+### Netcup (dev2null.de) — step by step
 
-Since dev2null.website is a **legacy IONOS VPS** (no REST API):
+1. Log in at **https://www.servercontrolpanel.de**
+2. Select your vServer (dev2null.de)
+3. Click **Snapshots** in the left sidebar
+4. Click **Create Snapshot** → enter a name (e.g. `copilot-2026-03-25`)
+5. Confirm — takes a few minutes (Copy-on-Write, space-efficient)
+6. To restore: click **Restore** next to a snapshot
+   > ⚠️ Server stops and reboots. All changes since snapshot are lost.
+
+### IONOS (dev2null.website) — step by step
 
 1. Log in at **https://my.ionos.com**
 2. Go to **Server & Cloud → dev2null.website**
-3. Click **Snapshots** tab → **Create Snapshot**
-4. Enter name (e.g. `backup-2026-03-25`) and confirm
-5. To restore: **Snapshots** → click **Restore** next to the snapshot
-
-> IONOS VPS snapshot limits depend on your plan — check your contract.
+3. Click the **Snapshots** tab → **Create Snapshot**
+4. Enter a name → confirm
+5. To restore: click **Restore** next to a snapshot
+   > ⚠️ All changes since snapshot are lost.
 
 ### Restore notes
 
-- **Netcup:** Server is stopped, rolled back, and rebooted automatically. All data after the snapshot creation date is lost.
-- **IONOS Cloud:** Volume-level restore — server should be stopped first for consistency.
-- Both providers keep their own snapshot retention — check provider billing for storage costs.
+- After restoring from snapshot, verify all services with `monitor.py`
+- If the snapshot is old, apply pending updates and re-run `backup.sh` immediately
+- Log the restore in `docs/vps-activity-log.md`
 
 ### When to use image backup vs. file backup
 
 | Scenario | Use |
 |----------|-----|
-| Quick pre-maintenance safety snapshot | `image-backup.py create` |
-| Regular incremental DB + config backup | `backup.sh` (daily, automated) |
-| Restore single DB or service | `recover.sh --target mysql/postgres/docker` |
-| Bare-metal disaster recovery | image snapshot → instant rollback |
-| Migrate to new host | image backup + provider restore |
+| Before major upgrades or config changes | Manual snapshot via SCP/IONOS panel |
+| Regular daily incremental backup | `backup.sh` (automated) |
+| Restore single DB or service | `recover.sh --target ...` |
+| Full disaster recovery (complete rollback) | Provider snapshot → Restore |
 
 ---
 

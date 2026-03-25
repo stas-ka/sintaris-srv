@@ -4,3 +4,4 @@ client_secret*.json
 *.token
 *.secret
 node_modules/
+vps-admin/backup/image-backup-log.json
