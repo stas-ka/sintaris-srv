@@ -51,7 +51,8 @@ vps-admin/
 │   ├── 06-vps-dev2null.de.md         full infrastructure map (disaster recovery)
 │   ├── 07-vps-dev2null.website.md    VPN/proxy server docs
 │   ├── vps-activity-protocol.md      how to log every server change
-│   └── vps-activity-log.md           running log of all Copilot-assisted changes
+│   ├── vps-activity-log.md           running log of all Copilot-assisted changes
+│   └── vps-coding-protocol.md        ← SESSION PROTOCOL (mandatory, like vibe-coding-protocol.md)
 ├── monitoring/
 │   ├── monitor.py                    health check daemon (deployed to both VPS)
 │   ├── monitor.env.example           config template for monitor
@@ -148,6 +149,7 @@ Confirmation must be an **explicit YES** via Telegram or Copilot chat, given in 
 3. **Test before apply** — `nginx -t`, `--dry-run`, etc.
 4. **Prefer reload** — `systemctl reload` instead of `restart` where possible
 5. **Log every change** — update `./docs/vps-activity-log.md` after each session
+6. **Write session protocol** — add a row to `./docs/vps-coding-protocol.md` for every request (analog to `sintaris-pl/doc/vibe-coding-protocol.md`). **Mandatory — not optional.**
 6. **Reversible steps** — keep old configs until new ones are verified
 7. **Ask before acting** — see Owner Confirmation Rule above
 
