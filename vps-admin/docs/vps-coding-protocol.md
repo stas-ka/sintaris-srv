@@ -125,4 +125,17 @@ Each session block contains a table with one row per completed request:
 
 **Session 5 total: 3 items, ~11 turns**
 
+---
+
+## Session 6 — 2026-03-26 (/status activity history)
+
+**Requests:**
+1. "by calling /status command from copilot-notify client it shall be last finished activities visible maximal 500 characters"
+
+| # | Time (UTC) | Request | What was done | Complexity | Turns | Commits | Status |
+|---|------|---------|---------------|-----------|-------|---------|--------|
+| 1 | 07:30 | /status show last activities ≤500 chars | Added activityLog[] to state, addActivity() called by tg_status/tg_ask/tg_complete, buildStatusMessage() builds reply ≤500 chars, persisted across restarts; rebuilt Docker image; tested | 2 | 3 | bd98dc6 | done |
+
+**Session 6 total: 1 item, ~3 turns**
+
 *Protocol maintained by Copilot. Updated at end of every session.*
