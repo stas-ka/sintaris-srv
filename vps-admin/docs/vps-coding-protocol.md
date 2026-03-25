@@ -168,3 +168,21 @@ Each session block contains a table with one row per completed request:
 | 3 | 10:50 | Add provider image/snapshot backup option | Rewrote image-backup.py as guided manual tool (guide/remind/log/status). Both providers are manual-only — no public REST API. Removed fake Netcup SCP API from v1. Updated README, SKILL.md, .env.example, backup.env.example. Added image-backup-log.json to .gitignore. | 2 | 4 | `6d64345`, `cad3be6` | done |
 
 **Session 8 total: 3 changes — all ✅**
+
+---
+
+## Session 9 — 2026-03-25 (Nextcloud backup + website backup.sh deploy)
+
+**Requests:**
+1. "BACKUP NEXTCLOUD COMPLETELY"
+2. "CREATE BACKUP FOR DEV2NULL.WEBSITE"
+3. "i receive alert ... no backup record found"
+
+| # | Time (UTC) | Request | What was done | Complexity | Turns | Commits | Status |
+|---|------|---------|---------------|-----------|-------|---------|--------|
+| 1 | 13:20 | Backup Nextcloud data completely | Started 147 GB Nextcloud data backup via SSH tar.gz piped to USB. Running in background (PID 240802). ~123 GB transferred at session time. | 2 | 4 | — | in-progress |
+| 2 | 14:50 | Backup dev2null.website | Manual tar backup of all services: nginx, haproxy, x-ui, webinar-bot, letsencrypt, amnezia-wg-easy. 181 MB → USB `/media/stas/Linux-Backup/dev2null.website/2026-03-25/website-backup-2026-03-25.tar.gz` | 2 | 6 | — | done |
+| 3 | 15:01 | Fix "no backup record found" alert | Deployed backup.sh + .env to dev2null.website `/opt/sintaris-backup/`. Ran backup — `.last_backup` written. Alert silenced. Also rsynced backup to USB. | 2 | 4 | — | done |
+| 4 | 15:05 | Strengthen tg_ask mandatory rule | Updated copilot-instructions.md: tg_ask = primary channel (not ask_user), added missing critical op categories | 1 | 2 | `202dc0e` | done |
+
+**Session 9 total: 4 items — 3 done, 1 in-progress**

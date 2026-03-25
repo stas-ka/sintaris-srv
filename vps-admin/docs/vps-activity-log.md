@@ -99,3 +99,16 @@ Format defined in [vps-activity-protocol.md](vps-activity-protocol.md).
 | 3 | 10:50 | local | Script update | Rewrote `image-backup.py` as guided manual tool (guide/remind/log/status). Removed fake Netcup SCP API. Cleaned `.env.example`, `backup.env.example`. | LOW | ✅ Done — `cad3be6` |
 
 **Session 8 total: 3 changes — all ✅**
+
+---
+
+## Session 9 — 2026-03-25
+
+| # | Time (UTC) | Server | Action | Description | Risk | Result |
+|---|------------|--------|--------|-------------|------|--------|
+| 1 | 13:20 | dev2null.de | Backup run | Started Nextcloud data full backup (147 GB) piped via SSH tar.gz to USB at `/media/stas/Linux-Backup/dev2null.de/nextcloud/nextcloud-data-2026-03-25.tar.gz` | LOW | ⏳ In progress (~123 GB at session time) |
+| 2 | 14:50 | dev2null.website | Backup run | Manual tar backup of all critical services (nginx, haproxy, x-ui, webinar-bot, letsencrypt, amnezia). 181 MB → USB | LOW | ✅ Done |
+| 3 | 15:01 | dev2null.website | New service | Deployed backup.sh + .env to `/opt/sintaris-backup/`. Ran backup — `.last_backup` created 2026-03-25T15:01:43. Silences monitoring alert "no backup record found". | MED | ✅ Done |
+| 4 | 15:05 | local | Instructions update | Strengthened `⛔ Owner Confirmation Rule` in copilot-instructions.md: tg_ask is PRIMARY channel, ask_user is fallback only. Added mount/unmount disk, transfers >100MB, ops >5min to critical categories. | LOW | ✅ Done — `202dc0e` |
+
+**Session 9 total: 4 changes — 3 ✅, 1 ⏳ (Nextcloud backup running)**
