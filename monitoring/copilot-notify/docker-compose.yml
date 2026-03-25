@@ -1,0 +1,21 @@
+services:
+  copilot-notify:
+    build: .
+    image: sintaris/copilot-notify:2
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7340:7340"   # only accessible locally (not internet)
+    env_file: .env
+    volumes:
+      - state:/data
+    environment:
+      - STATE_DIR=/data
+    healthcheck:
+      test: ["CMD", "node", "-e",
+        "const h=require('http');h.get('http://localhost:7340/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1));"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  state:
