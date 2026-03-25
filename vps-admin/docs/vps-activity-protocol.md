@@ -11,7 +11,7 @@ Each session block contains a table with one row per completed server action:
 
 ```
 ### Session N — YYYY-MM-DD
-| # | Time (UTC) | Action | Description | Risk | Result | Rollback |
+| # | Time (UTC) | Server | Action | Description | Risk | Result | Rollback |
 ```
 
 **Column definitions:**
@@ -20,6 +20,7 @@ Each session block contains a table with one row per completed server action:
 |--------|-------------|
 | **#** | Sequential row number within the session |
 | **Time (UTC)** | UTC timestamp when the change was applied |
+| **Server** | Target host — `dev2null.de`, `dev2null.website`, or `local` |
 | **Action** | Short verb phrase — what was done (e.g. "Edit config", "Deploy service") |
 | **Description** | File(s) or service(s) affected + one-line summary of the change |
 | **Risk** | Risk level — see scale below |
@@ -43,7 +44,9 @@ Each session block contains a table with one row per completed server action:
 2. **Test nginx before reload** — run `nginx -t` and confirm `syntax is ok` before any `nginx reload`
 3. **Verify service after restart** — run `systemctl status <service>` and check `active (running)`
 4. **Prefer reload over restart** — use `nginx -s reload` / `systemctl reload` where possible to minimise downtime
-5. **Document every change here** — add a row to the session log before closing the terminal
+5. **Document every change here** — add a row to `docs/vps-activity-log.md` before closing the terminal
+6. **Write session protocol** — add a row to `docs/vps-coding-protocol.md` for every user request (analog to vibe-coding-protocol.md)
+7. **Any new implementation or configuration change must update the relevant docs** — update `docs/06-vps-*.md`, `README.md`, skills, and instructions if they are affected
 
 ---
 

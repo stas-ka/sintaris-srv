@@ -23,6 +23,7 @@ Credentials in `../.env` (gitignored). See `.github/copilot-instructions.md` for
 | [07-vps-dev2null.website.md](docs/07-vps-dev2null.website.md) | VPN/proxy server — dev2null.website |
 | [vps-activity-protocol.md](docs/vps-activity-protocol.md) | Protocol for logging Copilot-assisted server changes |
 | [vps-activity-log.md](docs/vps-activity-log.md) | Running log of all server changes |
+| [vps-coding-protocol.md](docs/vps-coding-protocol.md) | Session protocol — every Copilot request logged (like vibe-coding-protocol.md) |
 
 ### `monitoring/` — Health check daemon
 
@@ -90,6 +91,20 @@ tg_notify(message="Found 3 warnings in nginx config", level="warning")
 tg_ask(question="Restart nginx now?", options=["Yes","No"])
 tg_complete(summary="...", wait_for_task=True)
 ```
+
+---
+
+## Documentation Rule — MANDATORY
+
+> **Any new implementation, configuration change, or new service must update all relevant documentation before the session ends.**
+
+| What changed | What to update |
+|-------------|---------------|
+| New service on VPS | `docs/06-*.md` or `docs/07-*.md`, `monitoring/monitor.py` profiles |
+| New Copilot tool / skill | `skills/`, `copilot-notify/AGENT.md`, `.github/copilot-instructions.md` |
+| New safety rule or process | `.github/copilot-instructions.md`, `docs/vps-activity-protocol.md`, `skills/skill-vps-change/SKILL.md` |
+| Any session work | `docs/vps-activity-log.md` + `docs/vps-coding-protocol.md` (both mandatory) |
+| Paths / structure changed | `README.md`, directory tree in `copilot-instructions.md`, any README that references old paths |
 
 ---
 

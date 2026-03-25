@@ -19,7 +19,7 @@ Notifies you when Copilot pauses, lets you reply via Telegram to unblock it, and
 ## Install (Docker)
 
 ```bash
-cd monitoring/copilot-notify
+cd vps-admin/copilot-notify
 npm install          # deps needed for setup.mjs only
 node setup.mjs       # interactive config: bot token, user ID, instance name
 docker compose up -d # start persistent service

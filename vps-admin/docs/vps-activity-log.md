@@ -21,7 +21,7 @@ Format defined in [vps-activity-protocol.md](vps-activity-protocol.md).
 
 ---
 
-## Session 2 — 2026-03-26
+## Session 2 — 2026-03-25
 
 | # | Time (UTC) | Server | Action | Description | Risk | Result |
 |---|------------|--------|--------|-------------|------|--------|

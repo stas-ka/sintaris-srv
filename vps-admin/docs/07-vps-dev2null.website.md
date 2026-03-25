@@ -2,7 +2,8 @@
 
 Secondary server used as a VPN endpoint and outbound proxy. Not a mail or application server.
 
-> **⚠️ Disk at 91% — investigate and clean up old logs/files before deploying anything new**
+> **Disk status:** 75% used (7.1GB / 9.6GB) — cleaned in Sessions 3+4 (was 91%).  
+> Last cleanup: 2026-03-25 — journal vacuum, dead bot logs, btmp.1, apt cache, swapfile2 resize.
 
 ---
 
@@ -14,19 +15,23 @@ Secondary server used as a VPN endpoint and outbound proxy. Not a mail or applic
 | IP | 82.165.231.93 |
 | OS | Ubuntu 22.04.5 LTS (x86_64) |
 | CPU | 1 core |
-| RAM | 840 MB total — 382 MB used |
-| Swap | 511 MB |
-| Disk | 9.6 GB total — **8.6 GB used (91% ⚠️)** |
+| RAM | 840 MB total |
+| Swap | 512 MB (/swapfile, active) + 750 MB (/swapfile2, active) = **1.26 GB total** |
+| Disk | 9.6 GB total — 7.1 GB used (75%) |
 | SSH | Password auth — user `boh`, password in `.env` as `${WEB_PASS}` |
 
 ---
 
 ## Services
 
-| Service | Role |
-|---------|------|
-| nginx | Reverse proxy |
-| docker | Container runtime |
+| Service | Type | Role |
+|---------|------|------|
+| nginx | systemd | Reverse proxy |
+| x-ui (3x-ui) | systemd | Xray VPN management panel (port 54321 local, 2096 public) |
+| xray | via x-ui | VPN/proxy server (ports 8443, 9443, 9444, 62789, 11111) |
+| haproxy | systemd | TCP load balancer / proxy |
+| webinar.bot | systemd | Webinar bot service |
+| docker | systemd | Container runtime |
 
 ---
 
@@ -34,17 +39,28 @@ Secondary server used as a VPN endpoint and outbound proxy. Not a mail or applic
 
 | Container | Image | Port | Purpose |
 |-----------|-------|------|---------|
-| amnezia-wg-easy | ghcr.io/spcfox/amnezia-wg-easy | 5443/udp, 51825/tcp | AmneziaWG VPN |
+| amnezia-wg-easy | ghcr.io/imbtqd/amnezia-wg-easy:3 | 5443/udp, 51825/tcp | AmneziaWG VPN (active) |
+
+Other images present (inactive, can be pruned):
+- `ghcr.io/wg-easy/wg-easy:latest` (175 MB, 9 months old)
+- `ghcr.io/spcfox/amnezia-wg-easy:latest` (80 MB, 19 months old)
+- `amneziavpn/amnezia-wg:latest` (21 MB, 2 years old)
 
 ---
 
-## Other Processes
+## Disk Usage Notes
 
-| Process | Ports | Notes |
-|---------|-------|-------|
-| xray | 8443, 9443, 9444, 62789, 11111 | Proxy server |
-| x-ui panel | 54321 (local), 2096 (public) | xray management panel |
-| python3 service | 8091 | — |
+| Path | Size | Notes |
+|------|------|-------|
+| /var/log/journal | max 200 MB | Limit set permanently in journald.conf (2026-03-25) |
+| /var/log/xray | ~165 MB | Rotated every 7 days. Log level: `info` |
+| /var/log/btmp | growing | Brute-force SSH login attempts — no fail2ban installed |
+| /home/boh | ~542 MB | Bot runtimes, install archives |
+| /home/ubuntu | ~397 MB | Old build sources (shadowsocks, mbedtls) |
+| /swapfile | 512 MB | Active swap, priority -2 |
+| /swapfile2 | 750 MB | Active swap, priority -3 |
+
+**Recommendation:** Install fail2ban to stop brute-force attacks filling `/var/log/btmp`.
 
 ---
 

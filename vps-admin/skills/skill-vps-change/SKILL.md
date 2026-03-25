@@ -16,7 +16,7 @@ Every change — no matter how small — must follow this procedure and be logge
 
 Before touching anything on the server:
 
-- [ ] Check `docs/vps-activity-protocol.md` — is there a recent change that could conflict?
+- [ ] Check `docs/vps-activity-log.md` — is there a recent change that could conflict?
 - [ ] Identify the exact file or service to be modified
 - [ ] Record the current state (service status, config snippet, port list)
 - [ ] Backup the target config file:
@@ -39,7 +39,7 @@ Before touching anything on the server:
 3. **Apply the change** — use reload where possible, restart only if required
 4. **Test immediately** — verify the service responds correctly
 5. **Verify service health** — check status and logs (commands below)
-6. **Update the activity log** — add a row to `docs/vps-activity-protocol.md` before closing
+6. **Update the activity log** — add a row to `docs/vps-activity-log.md` before closing
 
 ---
 
@@ -113,6 +113,8 @@ Downtime has direct user impact. When in doubt, stop.
 
 ## References
 
-- **Change log:** `docs/vps-activity-protocol.md` — all changes must be recorded here
+- **Change log:** `docs/vps-activity-log.md` — all server changes must be recorded here
+- **Session protocol:** `docs/vps-coding-protocol.md` — every Copilot request logged here
+- **Change rules:** `docs/vps-activity-protocol.md` — format and safety rules
 - **Server details:** `docs/06-vps-dev2null.de.md` — specs, services, containers, nginx vhosts
 - **Proxy server:** `docs/07-vps-dev2null.website.md` — VPN/proxy server details

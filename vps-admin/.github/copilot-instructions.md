@@ -142,16 +142,30 @@ Confirmation must be an **explicit YES** via Telegram or Copilot chat, given in 
 
 ---
 
-## Safety Rules for Server Changes
+## 📝 Documentation Rule — MANDATORY
+
+> **Any new implementation, change, or new service must update all relevant documentation before the session ends.**  
+> Undocumented changes are incomplete changes.
+
+| What changed | What to update |
+|-------------|---------------|
+| New service on VPS | `docs/06-*.md` or `docs/07-*.md`, `monitoring/monitor.py` profiles |
+| New Copilot tool / skill | `skills/`, `copilot-notify/AGENT.md`, this file |
+| New safety rule or process | This file, `docs/vps-activity-protocol.md`, `skills/skill-vps-change/SKILL.md` |
+| Any session work | `docs/vps-activity-log.md` + `docs/vps-coding-protocol.md` (both mandatory) |
+| Paths / structure changed | `README.md`, directory tree in this file, any README referencing old paths |
+
+---
 
 1. **Read before write** — understand what is running before changing it
 2. **Backup first** — `cp file file.bak` before editing any config
 3. **Test before apply** — `nginx -t`, `--dry-run`, etc.
 4. **Prefer reload** — `systemctl reload` instead of `restart` where possible
 5. **Log every change** — update `./docs/vps-activity-log.md` after each session
-6. **Write session protocol** — add a row to `./docs/vps-coding-protocol.md` for every request (analog to `sintaris-pl/doc/vibe-coding-protocol.md`). **Mandatory — not optional.**
-6. **Reversible steps** — keep old configs until new ones are verified
-7. **Ask before acting** — see Owner Confirmation Rule above
+6. **Write session protocol** — add a row to `./docs/vps-coding-protocol.md` for every request. **Mandatory — not optional.**
+7. **Update documentation** — see Documentation Rule above; undocumented changes are incomplete
+8. **Reversible steps** — keep old configs until new ones are verified
+9. **Ask before acting** — see Owner Confirmation Rule above
 
 ---
 
