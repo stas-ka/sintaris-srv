@@ -104,6 +104,33 @@ OpenClaw is the local AI gateway (Node.js). **Not** picoclaw (Python bot — lea
 - New service → copy template to `../sinta-openclaw/systemd/`, install to `~/.config/systemd/user/`
 - **Always update** `../sinta-openclaw/docs/architecture.md` after any structural change
 
+## Sensitive Data Rule
+
+**ALL credentials, passwords, tokens, and secrets must go in `.env` ONLY — never in documentation, code, or any file that is committed to git.**
+
+- `.env` is gitignored — this is the only place for real values
+- `.env.example` contains placeholder keys with empty values — commit only this
+- Documentation must use placeholder notation like `${VPS_PASS}` or `<password>` — never real values
+- This applies to: SSH passwords, API tokens, bot tokens, DB passwords, setup passwords, and any secret
+
+## Servers
+
+| Host | IP | User | Auth | Role |
+|------|----|------|------|------|
+| dev2null.de | 152.53.224.213 | stas | SSH key (`~/.ssh/id_ed25519`) | Main production VPS — **HIGHEST PRIORITY** |
+| dev2null.website | 82.165.231.93 | boh | password (in `.env` as `WEB_PASS`) | VPN/proxy server |
+
+> ⚠️ **dev2null.de is a live production server.** Always back up config before changes. Prefer `reload` over `restart`. Test with `--dry-run` or `-t` where possible.
+
+SSH helpers:
+```bash
+source ../.env
+# dev2null.de
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST}
+# dev2null.website (password auth via sshpass or paramiko)
+sshpass -p "${WEB_PASS}" ssh ${WEB_USER}@${WEB_HOST}
+```
+
 ## Documentation Rule
 
 **Always update docs when installing or configuring a new service, tool, or infrastructure component.**
