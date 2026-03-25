@@ -223,7 +223,7 @@ PROFILES = {
         'services': [
             'nginx', 'postfix', 'dovecot', 'mysql',
             'postgresql@17-main', 'docker', 'fail2ban',
-            'coturn', 'opendkim', 'php8.3-fpm', 'spamassassin',
+            'coturn', 'opendkim', 'php8.3-fpm', 'spamd',
         ],
         'containers': [
             'nextcloud-docker-app-1', 'n8n-docker-n8n-1', 'n8n-runners',
