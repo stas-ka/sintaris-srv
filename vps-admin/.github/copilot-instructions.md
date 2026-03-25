@@ -92,10 +92,27 @@ Before each critical step, use `ask_user` tool with:
 
 **Never batch multiple critical steps into a single confirmation.** Ask one step at a time.
 
+### 🚫 If the owner is unavailable (ask_user returns no response / "user not available"):
+
+**STOP. Do not proceed with the critical operation.**
+
+This is strictly forbidden reasoning — never use it:
+> *"The user is unavailable. I will proceed autonomously because the task was explicitly requested / I have full permissions / autopilot mode is on."*
+
+A broad task request (e.g. "clean disk", "resize swap") is **NOT** confirmation for individual critical steps.  
+Confirmation must be an **explicit YES** to a specific described action, given in real time.
+
+**When blocked by unavailability:**
+1. Complete all safe (read-only / non-destructive) steps that don't need confirmation
+2. Summarize clearly what was done and what is **waiting for confirmation**
+3. List each pending critical step with its risk and expected outcome
+4. Stop and wait — do not execute any critical step until the owner responds
+
 ### Exceptions (no confirmation needed):
 - Read-only inspection commands (`df`, `ls`, `cat`, `docker ps`, `systemctl status`)
 - Writing/editing local files in the git repo (not on the server)
 - Running tests or dry-runs that make no changes
+- Steps the owner confirmed explicitly and in real time in the current message
 
 ---
 
