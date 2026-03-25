@@ -104,9 +104,10 @@ Each session block contains a table with one row per completed request:
 | 4 | 06:24 | Download bot logs as zip | Created tar.gz on server; downloaded via SFTP to session files (1MB compressed) | 2 | 2 | `7133985` | done |
 | 5 | 06:25 | Resize swap to 750MB | swapoff → rm → fallocate 750M → mkswap → swapon /swapfile2; total swap 1.26GB; disk 75% | 3 | 2 | `7133985` | done |
 | 6 | 06:28 | Fix: Telegram notifications not sent | Diagnosed: MCP running but tools never called. Added MANDATORY tg_* section to instructions | 2 | 2 | `955293e` | done |
-| 7 | 06:33 | Create vps-coding-protocol.md (this file) | Analog to vibe-coding-protocol.md; covers all sessions 1–4 | 2 | 1 | — | done |
+| 7 | 06:33 | Create vps-coding-protocol.md (this file) | Analog to vibe-coding-protocol.md; covers all sessions 1–4 | 2 | 1 | `9e9fcca` | done |
+| 8 | 06:36 | Update all docs + add mandatory doc rule | Fixed 10 issues across 7 files: Server column, date fix, disk/services update, README + skill refs, Safety Rules renumbered, Documentation Rule added | 3 | 2 | `1a0a3e8` | done |
 
-**Session 4 total: 7 items, ~10 turns**
+**Session 4 total: 8 items, ~12 turns**
 
 ---
 
