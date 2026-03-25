@@ -84,12 +84,42 @@ const state = {
   pending:      {},
   // telegramMsgId -> reqId (for reply_to_message correlation)
   msgToReq:     {},
+  // Last N status updates: [{ ts, text }]
+  activityLog:  [],
 };
+
+const ACTIVITY_LOG_MAX = 10; // keep last 10 entries
+
+function addActivity(text) {
+  const ts = new Date().toISOString().slice(11, 16); // HH:MM UTC
+  state.activityLog.unshift({ ts, text });
+  if (state.activityLog.length > ACTIVITY_LOG_MAX) {
+    state.activityLog.length = ACTIVITY_LOG_MAX;
+  }
+}
+
+/** Build /status reply text — current status + recent activities (max 500 chars total) */
+function buildStatusMessage() {
+  const header = `Status: <b>${escHtml(state.status)}</b>`;
+  if (state.activityLog.length === 0) return header;
+
+  const lines = [];
+  let used = header.length + 20; // reserve for "\n\nRecent:\n"
+  for (const { ts, text } of state.activityLog) {
+    const line = `• ${ts} ${escHtml(text)}`;
+    if (used + line.length + 1 > 500) break;
+    lines.push(line);
+    used += line.length + 1;
+  }
+  if (lines.length === 0) return header;
+  return `${header}\n\n<b>Recent:</b>\n${lines.join("\n")}`;
+}
 
 function loadPersistedState() {
   try {
     const s = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
     state.lastUpdateId = s.lastUpdateId || 0;
+    if (Array.isArray(s.activityLog)) state.activityLog = s.activityLog;
   } catch (_) { /* fresh start */ }
 }
 
@@ -97,7 +127,11 @@ function persistState() {
   try {
     fs.mkdirSync(STATE_DIR, { recursive: true });
     fs.writeFileSync(STATE_FILE,
-      JSON.stringify({ lastUpdateId: state.lastUpdateId, status: state.status }, null, 2));
+      JSON.stringify({
+        lastUpdateId: state.lastUpdateId,
+        status: state.status,
+        activityLog: state.activityLog,
+      }, null, 2));
   } catch (e) { console.error("State persist:", e.message); }
 }
 
@@ -297,7 +331,7 @@ async function handleUpdate(upd) {
     const choice = sep !== -1 ? data.slice(sep + 1) : "";
 
     if (reqId === "status") {
-      await sendMsg(`${hdr("")}\nStatus: <b>${escHtml(state.status)}</b>`);
+      await sendMsg(`${hdr("")}\n${buildStatusMessage()}`);
       return;
     }
 
@@ -334,7 +368,7 @@ async function handleUpdate(upd) {
   const replyTo = msg.reply_to_message && msg.reply_to_message.message_id;
 
   if (text === "/status") {
-    await sendMsg(`${hdr("")}\nStatus: <b>${escHtml(state.status)}</b>`);
+    await sendMsg(`${hdr("")}\n${buildStatusMessage()}`);
     return;
   }
   if (text === "/help") {
@@ -478,6 +512,7 @@ function newMcpServer() {
       const timeout = Math.min(timeout_sec || 120, 600);
       const reqId = newReqId();
       state.pending[reqId] = { type: "question", ts: Date.now(), answered: false };
+      addActivity("❓ Asked: " + question.slice(0, 70));
       state.status = "waiting #" + reqId + ": " + question.slice(0, 50);
 
       const isYesNo = options && options.length === 2 &&
@@ -521,6 +556,7 @@ function newMcpServer() {
       status: z.string().describe("Human-readable current activity description"),
     },
     async ({ status }) => {
+      addActivity(status);
       state.status = status;
       persistState();
       return { content: [{ type: "text", text: "Status: " + status }] };
@@ -539,7 +575,9 @@ function newMcpServer() {
     },
     async ({ summary, wait_for_task }) => {
       const reqId = newReqId();
+      addActivity("✅ Task complete: " + summary.slice(0, 80).replace(/\n/g, " "));
       state.status = "idle — task complete";
+      persistState();
 
       const body = "✅ " + hdr(reqId) + " Task complete!\n\n" + escHtml(summary);
       const extra = wait_for_task ? { reply_markup: kbComplete(reqId) } : {};
