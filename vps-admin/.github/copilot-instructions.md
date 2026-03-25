@@ -84,7 +84,15 @@ vps-admin/
 
 ### How to ask:
 
-Before each critical step, use `ask_user` tool with:
+Before each critical step, **use `tg_ask` (Telegram MCP) as the primary confirmation channel**, so the owner receives the request on their phone even when not watching the Copilot chat. Fall back to `ask_user` only if the MCP server is unavailable.
+
+```
+tg_ask(
+  question="Step N — [Server]: [What will be done]\nRisk: MED\nExpected: [outcome]\n\nProceed?",
+  options=["Yes", "No"]
+)
+```
+
 - A clear description of **what** will be done
 - **Why** it is needed
 - **Risk** level (LOW / MED / HIGH)
@@ -92,7 +100,7 @@ Before each critical step, use `ask_user` tool with:
 
 **Never batch multiple critical steps into a single confirmation.** Ask one step at a time.
 
-### 🚫 If the owner is unavailable (ask_user returns no response / "user not available"):
+### 🚫 If the owner is unavailable (tg_ask/ask_user returns TIMEOUT / no response):
 
 **STOP. Do not proceed with the critical operation.**
 
@@ -100,11 +108,11 @@ This is strictly forbidden reasoning — never use it:
 > *"The user is unavailable. I will proceed autonomously because the task was explicitly requested / I have full permissions / autopilot mode is on."*
 
 A broad task request (e.g. "clean disk", "resize swap") is **NOT** confirmation for individual critical steps.  
-Confirmation must be an **explicit YES** to a specific described action, given in real time.
+Confirmation must be an **explicit YES** via Telegram or Copilot chat, given in real time.
 
 **When blocked by unavailability:**
 1. Complete all safe (read-only / non-destructive) steps that don't need confirmation
-2. Summarize clearly what was done and what is **waiting for confirmation**
+2. Send a `tg_notify` summarising what was done and what is **waiting for confirmation**
 3. List each pending critical step with its risk and expected outcome
 4. Stop and wait — do not execute any critical step until the owner responds
 

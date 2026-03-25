@@ -36,7 +36,11 @@ tg_ask(question="Which environment should I deploy to?", options=["staging","pro
 tg_ask(question="What domain name should I use?", timeout_sec=180)
 ```
 
-Returns: user reply text, `TIMEOUT`, or `CANCELLED`. On timeout/cancel, proceed with a safe default.
+Returns: user reply text, `TIMEOUT`, or `CANCELLED`.
+
+**⛔ On TIMEOUT or CANCELLED for a critical VPS operation: STOP. Do not proceed.**  
+Notify the user via `tg_notify` listing what is pending and why it is blocked.  
+Never use "no response = proceed" logic for destructive or system-changing operations.
 
 ### `tg_complete` — Signal task done, optionally wait for next task
 
