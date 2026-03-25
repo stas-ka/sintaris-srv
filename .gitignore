@@ -3,3 +3,4 @@ local-dev/.env
 client_secret*.json
 *.token
 *.secret
+node_modules/

@@ -12,10 +12,15 @@ Keep it up to date whenever a new service or tool is installed.
 | [03-vps-server-setup.md](03-vps-server-setup.md) | VPS: nginx, mail server, PostfixAdmin |
 | [04-openclaw-setup.md](04-openclaw-setup.md) | OpenClaw AI gateway (Node.js) — see also `../sinta-openclaw/` |
 | [05-n8n-vps-setup.md](05-n8n-vps-setup.md) | N8N production setup on VPS |
-| [06-vps-dev2null.de.md](06-vps-dev2null.de.md) | Full infrastructure map — dev2null.de (disaster recovery) |
-| [07-vps-dev2null.website.md](07-vps-dev2null.website.md) | VPN/proxy server — dev2null.website |
-| [vps-activity-protocol.md](vps-activity-protocol.md) | Protocol for logging all Copilot-assisted server changes |
-| [vps-activity-log.md](vps-activity-log.md) | Running log of all server changes |
+
+> **VPS-specific docs** (server maps, change log, monitoring) have moved to [`../vps-admin/docs/`](../vps-admin/docs/)
+
+| File | Topic |
+|------|-------|
+| [vps-admin/docs/06-vps-dev2null.de.md](../vps-admin/docs/06-vps-dev2null.de.md) | Full infrastructure map — dev2null.de (disaster recovery) |
+| [vps-admin/docs/07-vps-dev2null.website.md](../vps-admin/docs/07-vps-dev2null.website.md) | VPN/proxy server — dev2null.website |
+| [vps-admin/docs/vps-activity-protocol.md](../vps-admin/docs/vps-activity-protocol.md) | Protocol for logging Copilot-assisted server changes |
+| [vps-admin/docs/vps-activity-log.md](../vps-admin/docs/vps-activity-log.md) | Running log of all server changes |
 
 ## Infrastructure Overview
 
@@ -24,10 +29,14 @@ Local machine (this computer)
   └── sintaris-srv/          git repo
         ├── local-dev/       Docker: PostgreSQL + N8N (localhost:5678)
         ├── sinta-openclaw/  OpenClaw AI gateway (Node.js) — skills, services, MCP
-        ├── vps-admin/       Copilot instructions for VPS management
-        ├── docs/            This installation guide
+        ├── vps-admin/       ALL VPS admin: docs, monitoring, copilot-notify, skills
+        │     ├── docs/      Server maps, activity log, change protocol
+        │     ├── monitoring/ Health-check daemon (deployed to both VPS)
+        │     ├── copilot-notify/ MCP server — Copilot ↔ Telegram notifications
+        │     └── skills/    OpenClaw skills for server operations
+        ├── docs/            General setup guides (GitHub, local-dev, OpenClaw)
         ├── n8n/             N8N workflow exports
-        └── .env             VPS credentials (gitignored)
+        └── .env             All credentials (gitignored)
 
 dev2null.de (152.53.224.213) — PRODUCTION — Ubuntu 24.04 / aarch64
   ├── nginx                  Reverse proxy — 20+ virtual hosts
