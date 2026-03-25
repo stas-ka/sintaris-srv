@@ -94,8 +94,8 @@ Format defined in [vps-activity-protocol.md](vps-activity-protocol.md).
 
 | # | Time (UTC) | Server | Action | Description | Risk | Result |
 |---|------------|--------|--------|-------------|------|--------|
-| 1 | 10:20 | dev2null.de | Backup run | Deployed `backup.sh` to `/opt/sintaris-backup/`, ran full backup (configs, MySQL, PostgreSQL, Docker volumes). Nextcloud data volume excluded via `VOLUMES_SKIP`. | LOW | ✅ Done — 338MB archived |
-| 2 | 10:20 | local | Script update | Added `VOLUMES_SKIP` env var to `backup.sh` — skip large volumes by name. Updated `backup.env.example`. | LOW | ✅ Done |
-| 3 | 10:30 | local | USB transfer | Rsynced backup from dev2null.de to `/media/stas/Linux-Backup/dev2null.de/` (USB disk). | LOW | ✅ Done — 338MB transferred |
+| 1 | 10:20 | dev2null.de | Backup run | Deployed `backup.sh`, ran full backup excluding Nextcloud volume (VOLUMES_SKIP). 338MB archived. | LOW | ✅ Done |
+| 2 | 10:40 | local | Script + docs | Added `VOLUMES_SKIP` to backup.sh. Updated README, SKILL.md with new docs. | LOW | ✅ Done |
+| 3 | 10:50 | local | Script update | Rewrote `image-backup.py` as guided manual tool (guide/remind/log/status). Removed fake Netcup SCP API. Cleaned `.env.example`, `backup.env.example`. | LOW | ✅ Done — `cad3be6` |
 
 **Session 8 total: 3 changes — all ✅**

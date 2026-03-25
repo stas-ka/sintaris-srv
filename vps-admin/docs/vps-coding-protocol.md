@@ -163,8 +163,8 @@ Each session block contains a table with one row per completed request:
 
 | # | Time (UTC) | Request | What was done | Complexity | Turns | Commits | Status |
 |---|------|---------|---------------|-----------|-------|---------|--------|
-| 1 | 10:20 | Run backups to USB | Deployed backup.sh to dev2null.de, initial run aborted (Nextcloud volume 31GB+). Added VOLUMES_SKIP to backup.sh + backup.env.example. Restarted backup (88s), rsync 338MB to USB. | 3 | 12 | — | done |
+| 1 | 10:20 | Run backups to USB | Deployed backup.sh to dev2null.de, initial run aborted (Nextcloud volume 31GB+). Added VOLUMES_SKIP to backup.sh + backup.env.example. Restarted backup (88s), rsync 338MB to USB. | 3 | 12 | `d1aeeb5`, `451efd8` | done |
+| 2 | 10:40 | Update backup/recovery guidelines | Added VOLUMES_SKIP docs, Nextcloud exclusion note, manual Nextcloud backup command, local→USB workflow to README.md and SKILL.md | 1 | 2 | `451efd8` | done |
+| 3 | 10:50 | Add provider image/snapshot backup option | Rewrote image-backup.py as guided manual tool (guide/remind/log/status). Both providers are manual-only — no public REST API. Removed fake Netcup SCP API from v1. Updated README, SKILL.md, .env.example, backup.env.example. Added image-backup-log.json to .gitignore. | 2 | 4 | `6d64345`, `cad3be6` | done |
 
-**Session 8 total: 1 item, ~12 turns**
-
-*Protocol maintained by Copilot. Updated at end of every session.*
+**Session 8 total: 3 changes — all ✅**
