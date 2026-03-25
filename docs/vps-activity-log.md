@@ -18,3 +18,14 @@ Format defined in [vps-activity-protocol.md](vps-activity-protocol.md).
 | 4 | 01:25 | dev2null.website | Monitoring update | Added x-ui, haproxy, webinar.bot to monitoring profile. Redeployed monitor.py. | LOW | ✅ Done |
 
 **Session 1 total: 4 changes — all ✅**
+
+---
+
+## Session 2 — 2026-03-26
+
+| # | Time (UTC) | Server | Action | Description | Risk | Result |
+|---|------------|--------|--------|-------------|------|--------|
+| 1 | — | local | New tool | Created `monitoring/copilot-notify/` MCP server — Telegram ↔ Copilot bidirectional notification bridge. Tools: `tg_notify`, `tg_ask`, `tg_status`, `tg_complete`. HMAC-signed user ID security. | LOW | ✅ Done — bot @su_vscnotifier_bot tested |
+| 2 | — | local | Config | Registered `copilot-notify` in `~/.copilot/mcp-config.json`. Added `NOTIFY_BOT_TOKEN` / `NOTIFY_USER_ID` to `.env` and `.env.example`. | LOW | ✅ Done |
+
+**Session 2 total: 2 changes — all ✅**
