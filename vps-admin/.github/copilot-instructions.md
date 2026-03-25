@@ -91,7 +91,8 @@ vps-admin/
 │   ├── AGENT.md                      Copilot tool usage instructions
 │   └── README.md                     full documentation
 ├── skills/
-│   └── skill-vps-change/SKILL.md    OpenClaw skill for safe server ops
+│   ├── skill-vps-change/SKILL.md    OpenClaw skill for safe server ops
+│   └── skill-vps-backup/SKILL.md    OpenClaw skill for backup & recovery
 └── README.md                         hub index
 ```
 
@@ -334,6 +335,15 @@ Safe server operation skill for OpenClaw AI gateway.
 - **Update symlink after move:**
   ```bash
   ln -sfn /home/stas/projects/sintaris-srv/vps-admin/skills/skill-vps-change ~/.openclaw/skills/skill-vps-change
+  ```
+
+### Backup & Recovery Skill
+
+- **Source:** `./skills/skill-vps-backup/SKILL.md`
+- **Deployed:** `~/.openclaw/skills/skill-vps-backup/` (symlink)
+- **Update symlink after move:**
+  ```bash
+  ln -sfn /home/stas/projects/sintaris-srv/vps-admin/skills/skill-vps-backup ~/.openclaw/skills/skill-vps-backup
   ```
 
 ---
