@@ -109,10 +109,12 @@ vps-admin/
 
 ---
 
-## ⛔ Owner Confirmation Rule — MANDATORY
+## ⛔ Owner Confirmation Rule — MANDATORY FOR ALL TASKS
 
-> **Critical operations on any host ALWAYS require explicit confirmation from the owner (Stas).**  
-> This rule applies even if Copilot has full permissions, is running in autopilot mode, or was given a broad open-ended task.
+> **Critical operations ALWAYS require explicit confirmation from the owner (Stas) via Telegram (`tg_ask`).**
+> This rule applies to ALL tasks — VPS administration, backups, local operations, scripts, automation.
+> It applies even if Copilot has full permissions, is running in autopilot mode, or was given a broad open-ended task.
+> **`ask_user` in Copilot CLI is NOT a substitute for `tg_ask`. Use `tg_ask` first, always.**
 
 ### What counts as a critical operation (always ask first):
 
@@ -122,14 +124,19 @@ vps-admin/
 | **Stop / restart services** | systemctl stop/restart, docker compose down, reboot |
 | **Change system config** | fstab, journald.conf, sshd_config, nginx, firewall rules |
 | **Network changes** | firewall rules, port bindings, VPN config |
-| **Disk / memory layout** | swap create/delete, partition changes, disk format |
+| **Disk / memory layout** | swap create/delete, partition changes, disk format, mount/unmount |
 | **Security changes** | user creation/deletion, sudo rules, SSH keys, permissions |
 | **Package install/remove** | apt install/remove, pip install system-wide |
 | **Container changes** | docker rm, image prune, compose stack changes on production |
+| **Long-running operations** | any backup, transfer, or process expected to run > 5 minutes |
+| **Large data transfers** | copying, syncing, or downloading > 100 MB |
 
 ### How to ask:
 
-Before each critical step, **use `tg_ask` (Telegram MCP) as the primary confirmation channel**, so the owner receives the request on their phone even when not watching the Copilot chat. Fall back to `ask_user` only if the MCP server is unavailable.
+Before each critical step, **use `tg_ask` (Telegram MCP) as the PRIMARY and ONLY confirmation channel**.  
+The owner receives the request on their phone even when not watching the Copilot chat.  
+`ask_user` in Copilot CLI is a **fallback only** — use it only if the MCP server is confirmed unavailable (`curl http://localhost:7340/health` fails).  
+**Never silently proceed because the user already answered in chat — each critical step needs its own `tg_ask`.**
 
 ```
 tg_ask(
