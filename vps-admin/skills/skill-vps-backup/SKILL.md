@@ -40,6 +40,10 @@ Use this skill whenever Copilot is asked to backup, restore, or check backup sta
 | `opt` | `/opt` runtime directories |
 | `all` | All of the above (default) |
 
+### Excluded volumes
+
+`nextcloud-docker_nextcloud` (~30 GB of user files) is **excluded** from automated backups via `VOLUMES_SKIP` in `.env`. Back it up manually when needed (see [Backup Nextcloud data manually](#backup-nextcloud-data-manually)).
+
 ---
 
 ## SSH Access
@@ -87,6 +91,48 @@ sudo /opt/sintaris-backup/backup.sh --target mysql
 sudo /opt/sintaris-backup/backup.sh --target postgres
 sudo /opt/sintaris-backup/backup.sh --target docker
 sudo /opt/sintaris-backup/backup.sh --target configs
+```
+
+### Backup Nextcloud data manually
+
+`nextcloud-docker_nextcloud` is excluded from automated runs (it is ~30 GB). Back up manually when needed:
+
+```bash
+DEST=/mnt/sintaris-backup/backups/mail.dev2null.de/manual
+sudo mkdir -p $DEST
+sudo docker run --rm \
+  -v nextcloud-docker_nextcloud:/data:ro \
+  -v $DEST:/backup \
+  alpine tar -czf /backup/nextcloud-docker_nextcloud-$(date +%Y-%m-%d).tar.gz /data
+```
+
+### Running from local machine → USB disk
+
+When no permanent mount is configured on the VPS, run backup to `/tmp` on VPS then rsync to local USB:
+
+```bash
+source ../.env
+
+# Run in background on VPS (nohup — survives SSH disconnect)
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} \
+  'sudo mkdir -p /tmp/sintaris-backup/backups /tmp/sintaris-backup/logs && \
+   sudo chmod 777 /tmp/sintaris-backup/logs && \
+   nohup sudo BACKUP_MOUNT=/tmp/sintaris-backup /opt/sintaris-backup/backup.sh \
+   > /tmp/sintaris-backup/logs/backup-stdout.log 2>&1 &'
+
+# Monitor progress
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} \
+  'tail -f /tmp/sintaris-backup/logs/backup-stdout.log'
+
+# Rsync to USB when complete
+rsync -avz --progress \
+  -e "ssh -i ~/.ssh/id_ed25519" \
+  stas@${VPS_HOST}:/tmp/sintaris-backup/ \
+  /media/stas/Linux-Backup/dev2null.de/
+
+# Clean up on VPS
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} \
+  'sudo rm -rf /tmp/sintaris-backup'
 ```
 
 ---
@@ -272,6 +318,7 @@ TG_CHAT_ID=<chat_id>    # from ../.env in sintaris-srv
 BACKUP_MOUNT=/mnt/backup
 BACKUP_RETENTION_DAYS=7
 BACKUP_MAIL_DATA=no     # set to yes to include /var/mail/vhosts/
+VOLUMES_SKIP=nextcloud-docker_nextcloud   # skip large Docker volumes
 ```
 
 ---

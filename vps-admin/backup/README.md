@@ -16,6 +16,18 @@ Stores archives on a mounted backup volume. Sends Telegram notifications for eve
 | `opt` | Runtime configs in `/opt/sintaris-backup`, `/opt/sintaris-monitor` | ✅ always |
 | `mail` | Raw mail data at `/var/mail/vhosts/` | ⚠️ opt-in (`BACKUP_MAIL_DATA=yes`) |
 
+### Excluding large Docker volumes
+
+Some Docker volumes are very large (e.g. Nextcloud user files) and should be excluded from regular automated backups. Use the `VOLUMES_SKIP` env var in `/opt/sintaris-backup/.env`:
+
+```bash
+# Space-separated list of Docker volume names to skip
+VOLUMES_SKIP=nextcloud-docker_nextcloud
+```
+
+> **dev2null.de:** `nextcloud-docker_nextcloud` (~30 GB) is excluded by default.
+> Back it up manually when needed — see [Running Backups](#running-backups).
+
 ---
 
 ## Directory Structure
@@ -54,6 +66,8 @@ TG_BOT_TOKEN=your_bot_token
 TG_CHAT_ID=your_chat_id
 BACKUP_MOUNT=/mnt/sintaris-backup    # must be mounted
 BACKUP_RETENTION_DAYS=7
+# Skip large Docker volumes (space-separated)
+VOLUMES_SKIP=nextcloud-docker_nextcloud
 ```
 
 ### 2. Mount backup storage
@@ -120,6 +134,54 @@ systemctl list-timers sintaris-backup.timer
 
 # View logs
 journalctl -u sintaris-backup.service -n 50 --no-pager
+```
+
+### Backup the excluded Nextcloud data volume manually
+
+The `nextcloud-docker_nextcloud` volume is skipped in automated backups (it is ~30 GB of user files). To back it up manually when needed:
+
+```bash
+DEST=/mnt/sintaris-backup/backups/mail.dev2null.de/manual
+sudo mkdir -p $DEST
+sudo docker run --rm \
+  -v nextcloud-docker_nextcloud:/data:ro \
+  -v $DEST:/backup \
+  alpine tar -czf /backup/nextcloud-docker_nextcloud-$(date +%Y-%m-%d).tar.gz /data
+```
+
+### Running a backup from your local machine (USB disk)
+
+When no permanent mount is configured on the VPS, run backup locally and rsync to USB:
+
+```bash
+source ../.env
+
+# 1. Deploy (or update) scripts on VPS
+bash install.sh dev2null.de
+
+# 2. Set VOLUMES_SKIP in VPS .env (already set on dev2null.de)
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} \
+  'grep VOLUMES_SKIP /opt/sintaris-backup/.env || echo "VOLUMES_SKIP=nextcloud-docker_nextcloud" | sudo tee -a /opt/sintaris-backup/.env'
+
+# 3. Override mount path and run backup
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} \
+  'sudo mkdir -p /tmp/sintaris-backup/backups /tmp/sintaris-backup/logs && sudo chmod 777 /tmp/sintaris-backup/logs && \
+   nohup sudo BACKUP_MOUNT=/tmp/sintaris-backup /opt/sintaris-backup/backup.sh \
+   > /tmp/sintaris-backup/logs/backup-stdout.log 2>&1 &'
+
+# 4. Monitor progress
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} \
+  'tail -f /tmp/sintaris-backup/logs/backup-stdout.log'
+
+# 5. Rsync to USB when complete
+rsync -avz --progress \
+  -e "ssh -i ~/.ssh/id_ed25519" \
+  stas@${VPS_HOST}:/tmp/sintaris-backup/ \
+  /media/stas/Linux-Backup/dev2null.de/
+
+# 6. Clean up on VPS
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} \
+  'sudo rm -rf /tmp/sintaris-backup'
 ```
 
 ### Schedule
