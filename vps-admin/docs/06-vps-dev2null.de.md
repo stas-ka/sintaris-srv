@@ -175,7 +175,7 @@ journalctl -u sintaris-monitor.service -n 50
 - **Scripts:** `/opt/sintaris-backup/` (deployed via `vps-admin/backup/install.sh`)
 - **Config:** `/opt/sintaris-backup/.env`
 - **Schedule:** daily at 02:00 UTC (± 15 min)
-- **Storage:** `BACKUP_MOUNT` (must be a mounted volume — set in `.env`)
+- **Storage:** `/opt/sintaris-backup-data/` (persistent, survives reboots)
 - **Retention:** 7 days
 
 Backup targets: configs (nginx/postfix/ssl/fail2ban), MySQL, PostgreSQL, Docker compose + volumes, /opt

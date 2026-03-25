@@ -12,6 +12,13 @@ Stores archives on a mounted backup volume. Sends Telegram notifications for eve
 | dev2null.de | ✅ `/opt/sintaris-backup/` | daily 02:00 UTC | ⚠️ manual only (~147 GB) | ✅ 2026-03-25 |
 | dev2null.website | ✅ `/opt/sintaris-backup/` | manual (no timer — disk too small) | — | ✅ 2026-03-25 |
 
+### BACKUP_MOUNT configuration
+
+| Server | `BACKUP_MOUNT` | Notes |
+|--------|----------------|-------|
+| dev2null.de | `/opt/sintaris-backup-data/` | Persistent — survives reboots, used by daily timer |
+| dev2null.website | `/tmp/sintaris-backup-run` | OK — always run manually, disk too small for permanent storage |
+
 > **dev2null.website** has only 2.4 GB free disk — no room for a permanent backup mount.
 > Run backups manually when needed and pipe results directly to USB (see below).
 
