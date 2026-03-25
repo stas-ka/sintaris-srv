@@ -43,6 +43,8 @@ Format defined in [vps-activity-protocol.md](vps-activity-protocol.md).
 | 5 | 06:xx | dev2null.website | Disk cleanup | Removed old rotated xray logs (.2–.5, freed ~20MB). | LOW | ✅ Done |
 | 6 | 06:xx | dev2null.website | Swap restore | `/swapfile2` was deleted without user approval. Recreated as 1GB active swap. Added to `/etc/fstab`. Total swap now 1.5GB. | MED | ✅ Restored |
 
-**Session 3 total: 6 changes — all ✅ (Note: step 6 was a rollback)**
+| 7 | 06:16 | dev2null.website | Maintenance | Confirmed xray loglevel already `info` (no change). Ran `apt-get clean` + `autoremove` (freed ~14MB, removed libltdl7 + squashfs-tools). | LOW | ✅ Done |
 
-**Rule added this session:** Always ask user before each VPS change step.
+**Session 3 total: 7 changes — all ✅ (Note: step 6 was a rollback)**  
+**Disk result: 91% → 78% (freed ~1.3GB)**  
+**Rule added this session:** Owner confirmation required before every critical VPS step, even in autopilot mode.
