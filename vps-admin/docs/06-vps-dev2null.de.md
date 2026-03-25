@@ -142,15 +142,190 @@ Password: ${NEXTCLOUD_DB_PASS}
 
 ---
 
+## Open Ports & Services
+
+### TCP — publicly reachable (0.0.0.0 / [::])
+
+| Port | Protocol | Service | Process | Should be public? |
+|------|----------|---------|---------|-------------------|
+| 22 | TCP | SSH | sshd | ✅ Yes — key-auth only |
+| 25 | TCP | SMTP (receive) | postfix | ✅ Yes — needed for incoming mail |
+| 80 | TCP | HTTP | nginx | ✅ Yes — redirect to HTTPS + certbot |
+| 110 | TCP | POP3 (unencrypted) | dovecot | ⚠️ Recommended: block — use 995 |
+| 143 | TCP | IMAP (unencrypted) | dovecot | ⚠️ Recommended: block — use 993 |
+| 443 | TCP | HTTPS | nginx | ✅ Yes — all web services |
+| 587 | TCP | SMTP submission | postfix | ✅ Yes — mail clients send here |
+| 993 | TCP | IMAPS | dovecot | ✅ Yes — encrypted mail |
+| 995 | TCP | POP3S | dovecot | ✅ Yes — encrypted mail |
+| 3000 | TCP | Metabase | docker-proxy | ⚠️ Should be localhost only — bind to 127.0.0.1 |
+| 3478 | TCP+UDP | STUN/TURN | coturn | ✅ Yes — WebRTC (Nextcloud Talk) |
+| 5349 | TCP+UDP | TURNS/STUNS | coturn | ✅ Yes — WebRTC TLS |
+| 5432 | TCP | PostgreSQL | postgres | 🔴 **RISK** — database exposed to internet |
+| 8000 | TCP | uvicorn (demo) | /home/stas/demos/taskctl/ | 🔴 **RISK** — demo app, not a production service |
+| 8080 | TCP | Nextcloud direct | docker-proxy | ⚠️ Should be localhost — bypasses nginx SSL |
+| 8081 | TCP | expert-tgrm-bot | docker-proxy | ⚠️ Should be localhost only |
+| 8083 | TCP | bot_assistance | docker-proxy | ⚠️ Should be localhost only |
+| 8888 | TCP | EspoCRM direct | docker-proxy | ⚠️ Should be localhost — bypasses nginx SSL |
+
+### TCP — localhost only (safe, not reachable from internet)
+
+| Port | Service | Process |
+|------|---------|---------|
+| 53 | DNS resolver | systemd-resolved |
+| 783 | SpamAssassin | spamd |
+| 3306 | MySQL | mysqld |
+| 5678 | N8N | docker-proxy (127.0.0.1 binding — good) |
+| 9080 | PGAdmin | docker-proxy (127.0.0.1 binding — good) |
+| 33060 | MySQL X Protocol | mysqld |
+
+---
+
+## Nginx Virtual Hosts
+
+| Domain | HTTP | HTTPS | Backend |
+|--------|------|-------|---------|
+| cloud.dev2null.de | ✅ redirect | ✅ | Nextcloud (8080) |
+| cloud.sintaris.eu | ✅ redirect | ✅ | Nextcloud (8080) |
+| cloud.sintaris.net | ✅ redirect | ✅ | Nextcloud (8080) |
+| automata.dev2null.de | ✅ redirect | — | N8N (5678, localhost) |
+| apps.dev2null.de | ✅ | — | N8N (5678) |
+| crm.dev2null.de | ✅ | — | EspoCRM (8888) |
+| crm.sintaris.net | ✅ redirect | ✅ | EspoCRM (8888) |
+| mail.dev2null.de | ✅ redirect | ✅ | Roundcube (php-fpm) |
+| webmail.dev2null.de | ✅ | — | Roundcube |
+| webmail.sintaris.eu | ✅ | — | Roundcube |
+| webmail.sintaris.net | ✅ | — | Roundcube |
+| webmail.sintaru.com | ✅ | — | Roundcube |
+| mail.sintaris.net | ✅ | ✅ (shared) | Roundcube |
+| mail.sintaris.eu | ✅ | ✅ (shared) | Roundcube |
+| mail.sintaru.com | ✅ | ✅ (shared) | Roundcube |
+| db.dev2null.de | ✅ | — | PGAdmin (9080, localhost) |
+| dbview.dev2null.de | ✅ | — | PGAdmin (9080) |
+| pg.dev2null.de | ✅ | — | PGAdmin |
+| agents.sintaris.net | ✅ redirect | ✅ | OpenClaw |
+| control.sintaris.net | ✅ | — | Management UI |
+| sintaris.eu / www | ✅ | — | Web |
+| sintaris.net / www | ✅ | — | Web |
+| sintaru.com / www | ✅ | — | Web |
+| wp.sintaris.eu | ✅ | — | WordPress |
+| wp.sintaris.net | ✅ | ✅ | WordPress |
+| sqliteweb.dev2null.de | ✅ | — | SQLite Web viewer |
+
+---
+
 ## Security
 
 | Component | Details |
 |-----------|---------|
-| fail2ban | Active — protects SSH, mail (postfix/dovecot), and web |
+| fail2ban | Active — **SSH only** (1 jail). Postfix, dovecot, nginx NOT protected. |
 | coturn | TURN/STUN server — ports 3478 (UDP/TCP), 5349 (TLS) |
 | SSL | Let's Encrypt via certbot, auto-renewed |
-| UFW | Active firewall |
+| **UFW** | **⚠️ INACTIVE — no software firewall running** |
 | SSH | Key-based auth only, password auth disabled |
+
+### ⚠️ Security issues found (2026-03-25 audit)
+
+| Severity | Issue | Recommendation |
+|----------|-------|----------------|
+| 🔴 HIGH | UFW is inactive — no firewall | Enable UFW with rules below |
+| 🔴 HIGH | PostgreSQL (5432) exposed to internet | Block in UFW; bind to 127.0.0.1 in postgres config |
+| 🔴 HIGH | Demo app uvicorn:8000 exposed | Stop or bind to 127.0.0.1 |
+| ⚠️ MED | Metabase (3000) exposed to internet | Bind docker to 127.0.0.1:3000 in compose |
+| ⚠️ MED | Nextcloud (8080) directly reachable | Bind docker to 127.0.0.1:8080 in compose |
+| ⚠️ MED | EspoCRM (8888) directly reachable | Bind docker to 127.0.0.1:8888 in compose |
+| ⚠️ MED | Bot ports 8081, 8083 exposed | Bind docker to 127.0.0.1 in compose |
+| ⚠️ LOW | POP3 (110) and IMAP (143) unencrypted | Block in UFW — clients should use 993/995 |
+| ⚠️ LOW | fail2ban only protects SSH | Add jails: postfix, dovecot, nginx |
+| ⚠️ LOW | Docker bypasses UFW by default | Use DOCKER-USER iptables chain or bind ports to 127.0.0.1 |
+
+### Recommended UFW configuration
+
+```bash
+# Reset and set defaults
+sudo ufw --force reset
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+
+# === PUBLIC SERVICES ===
+sudo ufw allow 22/tcp comment 'SSH'
+sudo ufw allow 25/tcp comment 'SMTP - receive mail'
+sudo ufw allow 80/tcp comment 'HTTP - nginx + certbot'
+sudo ufw allow 443/tcp comment 'HTTPS - nginx'
+sudo ufw allow 587/tcp comment 'SMTP submission - mail clients'
+sudo ufw allow 993/tcp comment 'IMAPS - encrypted mail'
+sudo ufw allow 995/tcp comment 'POP3S - encrypted mail'
+sudo ufw allow 3478 comment 'STUN/TURN - Nextcloud Talk WebRTC'
+sudo ufw allow 5349 comment 'TURNS/STUNS - Nextcloud Talk WebRTC TLS'
+
+# === BLOCK UNENCRYPTED MAIL ===
+# (clients should use 993/995 instead)
+# sudo ufw deny 110 comment 'POP3 unencrypted - use 995'
+# sudo ufw deny 143 comment 'IMAP unencrypted - use 993'
+
+# Enable
+sudo ufw --force enable
+sudo ufw status verbose
+```
+
+> **⚠️ Docker bypass warning:** UFW rules alone do NOT block Docker-exposed ports.  
+> Docker adds its own iptables rules (DOCKER chain) that run before UFW's rules.  
+> To properly restrict Docker ports to localhost-only, bind them in `docker-compose.yml`:
+> ```yaml
+> ports:
+>   - "127.0.0.1:8080:80"  # instead of "8080:80"
+> ```
+> This applies to: Nextcloud (8080), EspoCRM (8888), Metabase (3000), bots (8081, 8083).
+
+### Recommended docker-compose port binding fixes
+
+For each service that should NOT be directly accessible from the internet:
+
+```bash
+# dev2null.de — services to restrict to localhost
+# Edit each compose file and change port bindings:
+
+# Nextcloud /opt/nextcloud-docker/docker-compose.yml
+#   "8080:80"  →  "127.0.0.1:8080:80"
+
+# EspoCRM /opt/espocrm/docker-compose.yml
+#   "8888:80"  →  "127.0.0.1:8888:80"
+
+# Metabase /opt/metabase/docker-compose.yml
+#   "3000:3000"  →  "127.0.0.1:3000:3000"
+
+# Expert bot /opt/bots/expert-tgrm-bot/docker-compose.yml
+#   "8081:8080"  →  "127.0.0.1:8081:8080"
+
+# Assistance bot /opt/bots/gpt-tgrm-bot/.../docker-compose.yml
+#   "8083:8082"  →  "127.0.0.1:8083:8082"
+```
+
+### Recommended fail2ban jails to add
+
+```bash
+# /etc/fail2ban/jail.local
+[postfix]
+enabled = true
+port = smtp,465,587
+logpath = /var/log/mail.log
+maxretry = 5
+
+[dovecot]
+enabled = true
+port = pop3,pop3s,imap,imaps,submission,993,995
+logpath = /var/log/mail.log
+maxretry = 5
+
+[nginx-http-auth]
+enabled = true
+port = http,https
+logpath = /var/log/nginx/error.log
+
+[nginx-limit-req]
+enabled = true
+port = http,https
+logpath = /var/log/nginx/error.log
+```
 
 ---
 
