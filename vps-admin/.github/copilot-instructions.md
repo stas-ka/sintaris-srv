@@ -64,6 +64,41 @@ vps-admin/
 
 ---
 
+## ⛔ Owner Confirmation Rule — MANDATORY
+
+> **Critical operations on any host ALWAYS require explicit confirmation from the owner (Stas).**  
+> This rule applies even if Copilot has full permissions, is running in autopilot mode, or was given a broad open-ended task.
+
+### What counts as a critical operation (always ask first):
+
+| Category | Examples |
+|----------|---------|
+| **Delete / remove data** | rm files, truncate logs, drop databases, docker prune, remove swap |
+| **Stop / restart services** | systemctl stop/restart, docker compose down, reboot |
+| **Change system config** | fstab, journald.conf, sshd_config, nginx, firewall rules |
+| **Network changes** | firewall rules, port bindings, VPN config |
+| **Disk / memory layout** | swap create/delete, partition changes, disk format |
+| **Security changes** | user creation/deletion, sudo rules, SSH keys, permissions |
+| **Package install/remove** | apt install/remove, pip install system-wide |
+| **Container changes** | docker rm, image prune, compose stack changes on production |
+
+### How to ask:
+
+Before each critical step, use `ask_user` tool with:
+- A clear description of **what** will be done
+- **Why** it is needed
+- **Risk** level (LOW / MED / HIGH)
+- Expected outcome
+
+**Never batch multiple critical steps into a single confirmation.** Ask one step at a time.
+
+### Exceptions (no confirmation needed):
+- Read-only inspection commands (`df`, `ls`, `cat`, `docker ps`, `systemctl status`)
+- Writing/editing local files in the git repo (not on the server)
+- Running tests or dry-runs that make no changes
+
+---
+
 ## Safety Rules for Server Changes
 
 1. **Read before write** — understand what is running before changing it
@@ -72,6 +107,7 @@ vps-admin/
 4. **Prefer reload** — `systemctl reload` instead of `restart` where possible
 5. **Log every change** — update `./docs/vps-activity-log.md` after each session
 6. **Reversible steps** — keep old configs until new ones are verified
+7. **Ask before acting** — see Owner Confirmation Rule above
 
 ---
 
