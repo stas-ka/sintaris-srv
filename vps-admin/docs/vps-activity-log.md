@@ -48,3 +48,15 @@ Format defined in [vps-activity-protocol.md](vps-activity-protocol.md).
 **Session 3 total: 7 changes — all ✅ (Note: step 6 was a rollback)**  
 **Disk result: 91% → 78% (freed ~1.3GB)**  
 **Rule added this session:** Owner confirmation required before every critical VPS step, even in autopilot mode.
+
+---
+
+## Session 4 — 2026-03-25
+
+| # | Time (UTC) | Server | Action | Description | Risk | Result |
+|---|------------|--------|--------|-------------|------|--------|
+| 1 | 06:22 | local | Instruction update | Added Owner Confirmation Rule to `vps-admin/.github/copilot-instructions.md`. Ask before every critical step. | LOW | ✅ Done |
+| 2 | 06:24 | dev2null.website | Download | Downloaded bot logs as `bot-logs-20260325.tar.gz` (1MB compressed) to session files. Includes: learning.bot, webinar-bot, nastavn, boh, assistance, expert, sh.log. | LOW | ✅ Done |
+| 3 | 06:25 | dev2null.website | Swap resize | Resized `/swapfile2` from 1GB → 750MB. Total swap: 1.26GB (512MB + 750MB). Disk: 78% → 75%. | MED | ✅ Done |
+
+**Session 4 total: 3 changes — all ✅**
