@@ -37,10 +37,36 @@ bash monitoring/install.sh
 
 | File | Description |
 |------|-------------|
-| [monitor.py](monitoring/monitor.py) | Health check script (services, Docker, HTTP) |
+| [monitor.py](monitoring/monitor.py) | Health check script (services, Docker, HTTP, backup health) |
 | [install.sh](monitoring/install.sh) | Installer — deploys to VPS, enables systemd timers |
 | [monitor.env.example](monitoring/monitor.env.example) | Config template |
 | `sintaris-monitor*.service/timer` | Systemd unit files |
+
+### `backup/` — Backup & Recovery System
+
+Deployed to both VPS servers. Daily backups, Telegram notifications for all events.
+
+```bash
+# Deploy to a server
+bash backup/install.sh dev2null.de
+bash backup/install.sh dev2null.website
+
+# Test locally (no server needed)
+bash backup/test-mockup.sh
+```
+
+| File | Description |
+|------|-------------|
+| [backup.sh](backup/backup.sh) | Main backup script (MySQL, PostgreSQL, Docker, configs) |
+| [recover.sh](backup/recover.sh) | Recovery / restore script |
+| [notify-event.sh](backup/notify-event.sh) | System event notifier (startup/shutdown/sleep/resume) |
+| [install.sh](backup/install.sh) | Installer — deploys to VPS |
+| [test-mockup.sh](backup/test-mockup.sh) | Local dry-run test suite (29 checks) |
+| [backup.env.example](backup/backup.env.example) | Config template |
+| [README.md](backup/README.md) | Full documentation |
+| `sintaris-backup.service/timer` | Daily backup systemd units |
+| `sintaris-sysevent.service` | Startup/shutdown event service |
+| `sintaris-sleep.sh` | Sleep/resume hook |
 
 ### `copilot-notify/` — Copilot ↔ Telegram MCP Server
 

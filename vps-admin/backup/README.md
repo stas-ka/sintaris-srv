@@ -1,0 +1,244 @@
+# Sintaris Backup & Recovery
+
+Automated backup system for dev2null.de and dev2null.website.  
+Stores archives on a mounted backup volume. Sends Telegram notifications for every event.
+
+---
+
+## What Gets Backed Up
+
+| Target | Content | Default |
+|--------|---------|---------|
+| `configs` | nginx, postfix, dovecot, SSL renewals, fail2ban, haproxy, x-ui | ✅ always |
+| `mysql` | All user databases (nextcloud, roundcube, postfixadmin) | ✅ always |
+| `postgres` | All user databases (n8n, espocrm, ...) + roles/users | ✅ always |
+| `docker` | Compose configs (`/opt/*/docker-compose.yml`) + named volumes | ✅ always |
+| `opt` | Runtime configs in `/opt/sintaris-backup`, `/opt/sintaris-monitor` | ✅ always |
+| `mail` | Raw mail data at `/var/mail/vhosts/` | ⚠️ opt-in (`BACKUP_MAIL_DATA=yes`) |
+
+---
+
+## Directory Structure
+
+```
+vps-admin/backup/
+├── backup.sh                 Main backup script
+├── recover.sh                Recovery / restore script
+├── notify-event.sh           System event notifier (startup/shutdown/sleep/resume)
+├── install.sh                Deploy to VPS
+├── test-mockup.sh            Local mockup test (no server needed)
+├── backup.env.example        Config template
+├── sintaris-backup.service   Systemd service (run backup)
+├── sintaris-backup.timer     Systemd timer (daily 02:00 UTC)
+├── sintaris-sysevent.service Systemd service (startup/shutdown alerts)
+└── sintaris-sleep.sh         Sleep/resume hook for /lib/systemd/system-sleep/
+```
+
+---
+
+## Setup
+
+### 1. Configure credentials
+
+On the target VPS, create `/opt/sintaris-backup/.env`:
+
+```bash
+sudo mkdir -p /opt/sintaris-backup
+sudo nano /opt/sintaris-backup/.env
+```
+
+See `backup.env.example` for all options. Minimum required:
+
+```bash
+TG_BOT_TOKEN=your_bot_token
+TG_CHAT_ID=your_chat_id
+BACKUP_MOUNT=/mnt/sintaris-backup    # must be mounted
+BACKUP_RETENTION_DAYS=7
+```
+
+### 2. Mount backup storage
+
+The backup mount point must exist and be mounted before the first backup run:
+
+```bash
+# Example: NFS mount
+echo "nas.local:/backups  /mnt/sintaris-backup  nfs  defaults  0 0" | sudo tee -a /etc/fstab
+sudo mount -a
+
+# Example: extra disk
+echo "/dev/sdb1  /mnt/sintaris-backup  ext4  defaults  0 2" | sudo tee -a /etc/fstab
+sudo mount -a
+
+# For testing: just use a local directory
+sudo mkdir -p /mnt/sintaris-backup
+```
+
+### 3. Deploy
+
+From your local machine:
+
+```bash
+cd vps-admin/backup
+
+# Deploy to production server
+bash install.sh dev2null.de
+
+# Deploy to VPN server
+bash install.sh dev2null.website
+
+# Dry-run first (no changes)
+bash install.sh --dry-run dev2null.de
+```
+
+The installer:
+- Creates `/opt/sintaris-backup/`
+- Uploads `backup.sh`, `recover.sh`, `notify-event.sh`
+- Creates `/opt/sintaris-backup/.env` (if not present)
+- Installs systemd units and enables timer
+- Installs sleep hook at `/lib/systemd/system-sleep/99-sintaris-notify.sh`
+
+---
+
+## Running Backups
+
+```bash
+# Full backup (all targets)
+sudo /opt/sintaris-backup/backup.sh
+
+# Dry-run (print what would be done, no changes)
+sudo /opt/sintaris-backup/backup.sh --dry-run
+
+# Single target
+sudo /opt/sintaris-backup/backup.sh --target mysql
+sudo /opt/sintaris-backup/backup.sh --target postgres
+sudo /opt/sintaris-backup/backup.sh --target configs
+sudo /opt/sintaris-backup/backup.sh --target docker
+
+# Check timer
+systemctl status sintaris-backup.timer
+systemctl list-timers sintaris-backup.timer
+
+# View logs
+journalctl -u sintaris-backup.service -n 50 --no-pager
+```
+
+### Schedule
+
+| Event | Time |
+|-------|------|
+| Daily backup | 02:00 UTC ± up to 15 min (randomized) |
+| Missed run recovery | On next startup (timer is persistent) |
+| Retention | 7 days (configurable) |
+
+---
+
+## Recovery
+
+```bash
+# List available backups
+sudo /opt/sintaris-backup/recover.sh list
+
+# Restore everything from a date
+sudo /opt/sintaris-backup/recover.sh restore --date 2026-03-25
+
+# Restore specific target
+sudo /opt/sintaris-backup/recover.sh restore --date 2026-03-25 --target mysql
+sudo /opt/sintaris-backup/recover.sh restore --date 2026-03-25 --target postgres
+sudo /opt/sintaris-backup/recover.sh restore --date 2026-03-25 --target configs
+
+# Dry-run restore (safe — no changes)
+sudo /opt/sintaris-backup/recover.sh restore --date 2026-03-25 --dry-run
+```
+
+### Recovery Order (full server restore)
+
+1. Fresh OS install (Ubuntu 24.04)
+2. Install prerequisites (nginx, mysql, postgresql, docker, etc.)
+3. Mount backup storage at `BACKUP_MOUNT`
+4. Restore configs: `recover.sh restore --target configs`
+5. Reload services: `systemctl daemon-reload && systemctl reload nginx`
+6. Restore databases: `--target mysql` then `--target postgres`
+7. Restore Docker: `--target docker` then `docker compose up -d` in each `/opt/*/`
+8. Verify services: `systemctl status` + test endpoints
+
+---
+
+## System Event Notifications
+
+The following events send Telegram alerts automatically:
+
+| Event | Trigger |
+|-------|---------|
+| 🟢 Server started | `sintaris-sysevent.service` starts with OS |
+| 🔴 Server shutting down | `sintaris-sysevent.service` ExecStop |
+| 🔄 Server rebooting | Detected automatically on shutdown |
+| 😴 Server sleeping | `/lib/systemd/system-sleep/` hook |
+| ☀️ Server resumed | `/lib/systemd/system-sleep/` hook |
+| 💾 Backup started | `backup.sh` on every run |
+| ✅ Backup completed | `backup.sh` on success |
+| ❌ Backup failed | `backup.sh` on error |
+
+### Manual event trigger
+
+```bash
+sudo /opt/sintaris-backup/notify-event.sh startup
+sudo /opt/sintaris-backup/notify-event.sh "custom: my message"
+```
+
+---
+
+## Monitoring Integration
+
+`monitoring/monitor.py` checks backup health automatically:
+- Alerts if last backup is older than 2 days
+- Reports last backup timestamp in daily summary
+- State file: `/opt/sintaris-backup/.last_backup`
+
+---
+
+## Testing (Local Mockup)
+
+No VPS access needed. Runs `backup.sh --dry-run` with a temp dir.
+Sends real `[MOCKUP]` Telegram notifications.
+
+```bash
+cd vps-admin/backup
+bash test-mockup.sh
+
+# Without Telegram (fully offline)
+bash test-mockup.sh --no-tg
+```
+
+Test coverage (29 checks):
+- All required files present
+- Script syntax (`bash -n`)
+- Dry-run for dev2null.de (all 5 targets)
+- Dry-run for dev2null.website
+- Single-target dry-run
+- All 6 notify-event.sh event types
+- recover.sh list (empty, graceful)
+- recover.sh dry-run restore
+
+---
+
+## Backup Layout on Mount
+
+```
+/mnt/sintaris-backup/
+├── backups/
+│   ├── dev2null.de/
+│   │   ├── 2026-03-25/
+│   │   │   ├── configs/       ← nginx, postfix, ssl, etc.
+│   │   │   ├── mysql/         ← one .sql.gz per database
+│   │   │   ├── postgresql/    ← one .pgdump per database + globals
+│   │   │   ├── docker/
+│   │   │   │   ├── configs/   ← compose dirs as .tar.gz
+│   │   │   │   └── volumes/   ← docker volumes as .tar.gz
+│   │   │   ├── opt/           ← monitor, backup configs
+│   │   │   └── MANIFEST.sha256
+│   │   └── 2026-03-26/  ...
+│   └── dev2null.website/
+│       └── ...
+└── logs/
+    └── dev2null.de-2026-03-25T02-00-01Z.log
+```

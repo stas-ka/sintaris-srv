@@ -1,0 +1,23 @@
+[Unit]
+Description=Sintaris System Event Notifier (startup / shutdown)
+# Start after network is up so Telegram messages can be sent
+After=network-online.target
+Wants=network-online.target
+# Make sure we survive until shutdown notification is sent
+DefaultDependencies=no
+Before=shutdown.target reboot.target halt.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+# Send startup notification when the service starts
+ExecStart=/opt/sintaris-backup/notify-event.sh startup
+# Send shutdown / reboot notification when the service is stopped
+ExecStop=/opt/sintaris-backup/notify-event.sh shutdown
+StandardOutput=journal
+StandardError=journal
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

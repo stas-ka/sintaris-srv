@@ -20,6 +20,20 @@ The `copilot-notify` MCP server runs at `http://localhost:7340/sse` and is alway
 **Failure to call `tg_complete` at the end of a task is a bug.**  
 Full usage instructions: `./copilot-notify/AGENT.md`
 
+### ⚠️ Why `/status` shows "idle — no active session"
+
+`/status` only reflects the last `tg_status` call made via the MCP SSE protocol.  
+`openclaw-openclaw_message` sends Telegram messages but does **NOT** update `/status`.  
+**Always call `tg_status` (not just send a message) at the start of each major step.**
+
+Helper script to call MCP tools from bash (keeps SSE connection alive):
+```bash
+python3 ./copilot-notify/tg_update.py status "Doing X — step N/M"
+python3 ./copilot-notify/tg_update.py notify "Step complete: ..." success
+python3 ./copilot-notify/tg_update.py ask "Proceed with Y?" "Yes,No"
+python3 ./copilot-notify/tg_update.py complete "Task done. Summary: ..."
+```
+
 ---
 
 ## Servers
@@ -58,9 +72,21 @@ vps-admin/
 │   ├── monitor.env.example           config template for monitor
 │   ├── install.sh                    installer (deploys monitor to a VPS)
 │   └── sintaris-monitor*.service/timer  systemd unit files
+├── backup/
+│   ├── backup.sh                     main backup script (MySQL/PG/Docker/configs)
+│   ├── recover.sh                    recovery / restore script
+│   ├── notify-event.sh               system event notifier (startup/shutdown/sleep)
+│   ├── install.sh                    deploy backup system to a VPS
+│   ├── test-mockup.sh                local dry-run test suite (29 checks)
+│   ├── backup.env.example            config template
+│   ├── sintaris-backup.service/timer daily backup systemd units
+│   ├── sintaris-sysevent.service     startup/shutdown event service
+│   ├── sintaris-sleep.sh             sleep/resume hook
+│   └── README.md                     full documentation
 ├── copilot-notify/
 │   ├── server.mjs                    MCP server v2 (HTTP/SSE, Docker)
 │   ├── setup.mjs                     interactive setup + HMAC sign
+│   ├── tg_update.py                  helper to call tg_status/tg_notify from bash
 │   ├── docker-compose.yml            Docker service (port 7340)
 │   ├── AGENT.md                      Copilot tool usage instructions
 │   └── README.md                     full documentation

@@ -111,4 +111,18 @@ Each session block contains a table with one row per completed request:
 
 ---
 
+## Session 5 — 2026-03-25 (backup & recovery system)
+
+**Requests:**
+1. "show me all last prompts from me and prompts that was not finished in last using of copilot before my computer was shut downed"
+2. "yes, continue" → continue backup implementation
+
+| # | Time (UTC) | Request | What was done | Complexity | Turns | Commits | Status |
+|---|------|---------|---------------|-----------|-------|---------|--------|
+| 1 | 07:00 | implement backup + recovery for all VPS services (interrupted) | Completed: backup.sh, recover.sh, notify-event.sh, backup.env.example, 4 systemd units + sleep hook, install.sh | 5 | 6 | — | done |
+| 2 | 07:15 | Show interrupted tasks + continue | Diagnosed incomplete state, confirmed continuation, wrote test-mockup.sh, ran 29/29 passing tests | 3 | 3 | — | done |
+| 3 | 07:20 | — (continuation) | Updated monitor.py (backup health check), tg_update.py helper (fixes /status idle bug), docs: 06+07 server docs, README, copilot-instructions.md, activity log, this protocol | 3 | 2 | — | done |
+
+**Session 5 total: 3 items, ~11 turns**
+
 *Protocol maintained by Copilot. Updated at end of every session.*

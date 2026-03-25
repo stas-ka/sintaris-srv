@@ -170,6 +170,35 @@ journalctl -u sintaris-monitor.service -n 50
 
 ---
 
+## Backup
+
+- **Scripts:** `/opt/sintaris-backup/` (deployed via `vps-admin/backup/install.sh`)
+- **Config:** `/opt/sintaris-backup/.env`
+- **Schedule:** daily at 02:00 UTC (± 15 min)
+- **Storage:** `BACKUP_MOUNT` (must be a mounted volume — set in `.env`)
+- **Retention:** 7 days
+
+```bash
+# Run backup manually
+sudo /opt/sintaris-backup/backup.sh
+
+# Dry-run (no changes)
+sudo /opt/sintaris-backup/backup.sh --dry-run
+
+# List available backups
+sudo /opt/sintaris-backup/recover.sh list
+
+# Restore from date
+sudo /opt/sintaris-backup/recover.sh restore --date 2026-03-25
+
+# Check timer
+systemctl status sintaris-backup.timer
+```
+
+Backup targets: configs (nginx/postfix/ssl), MySQL, PostgreSQL, Docker, /opt
+
+---
+
 ## Recovery / New Host Install
 
 Order of installation steps when provisioning a fresh server:
@@ -185,4 +214,5 @@ Order of installation steps when provisioning a fresh server:
 9. **coturn** — TURN/STUN for WebRTC (Nextcloud Talk, etc.)
 10. **fail2ban** — configure jails for SSH, postfix, dovecot, nginx
 11. **Monitoring** — deploy `sintaris-monitor` systemd timer
-12. **Restore data from backups** — databases, mail, Nextcloud data, configs
+12. **Backup** — deploy `sintaris-backup` via `backup/install.sh`, mount backup storage
+13. **Restore data from backups** — `recover.sh restore`, then restart services

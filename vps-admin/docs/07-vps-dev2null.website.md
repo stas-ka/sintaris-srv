@@ -117,3 +117,25 @@ ssh-copy-id -i ~/.ssh/id_ed25519.pub boh@dev2null.website
 systemctl status sintaris-monitor.timer
 journalctl -u sintaris-monitor.service -n 30
 ```
+
+---
+
+## Backup
+
+- **Scripts:** `/opt/sintaris-backup/` (deployed via `vps-admin/backup/install.sh`)
+- **Config:** `/opt/sintaris-backup/.env`
+- **Schedule:** daily at 02:00 UTC (± 15 min)
+- **Storage:** `BACKUP_MOUNT` (must be a mounted volume — set in `.env`)
+
+```bash
+# Run backup manually
+sudo /opt/sintaris-backup/backup.sh
+
+# Dry-run
+sudo /opt/sintaris-backup/backup.sh --dry-run
+
+# List backups
+sudo /opt/sintaris-backup/recover.sh list
+```
+
+Backup targets: nginx/haproxy configs, Docker configs, x-ui db, /opt runtimes

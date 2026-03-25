@@ -214,6 +214,26 @@ def load_avg_warning(crit=4.0):
     return issues
 
 
+def check_backup_health(warn_days=2, state_file='/opt/sintaris-backup/.last_backup'):
+    """Alert if last successful backup is older than warn_days days."""
+    issues = []
+    try:
+        p = Path(state_file)
+        if not p.exists():
+            issues.append("⚠️ Backup: no backup record found — has backup.sh ever run?")
+            return issues
+        ts_str = p.read_text().strip()
+        last_backup = datetime.datetime.fromisoformat(ts_str)
+        age_days = (datetime.datetime.now() - last_backup).days
+        if age_days >= warn_days:
+            issues.append(
+                f"⚠️ Backup: last backup <b>{age_days} day(s) ago</b> ({ts_str}) — check sintaris-backup.timer"
+            )
+    except Exception as e:
+        issues.append(f"⚠️ Backup health check error: {e}")
+    return issues
+
+
 # ---------------------------------------------------------------------------
 # Server-specific config
 # ---------------------------------------------------------------------------
@@ -287,6 +307,7 @@ def main():
     issues += check_memory()
     issues += load_avg_warning()
     issues += check_fail2ban()
+    issues += check_backup_health()
 
     if mode != 'quick':
         issues += check_http(profile['endpoints'])

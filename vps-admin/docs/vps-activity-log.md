@@ -60,3 +60,18 @@ Format defined in [vps-activity-protocol.md](vps-activity-protocol.md).
 | 3 | 06:25 | dev2null.website | Swap resize | Resized `/swapfile2` from 1GB → 750MB. Total swap: 1.26GB (512MB + 750MB). Disk: 78% → 75%. | MED | ✅ Done |
 
 **Session 4 total: 3 changes — all ✅**
+
+---
+
+## Session 5 — 2026-03-25
+
+| # | Time (UTC) | Server | Action | Description | Risk | Result |
+|---|------------|--------|--------|-------------|------|--------|
+| 1 | 07:05 | local | New system | Created `vps-admin/backup/` — full backup & recovery system. Scripts: `backup.sh`, `recover.sh`, `notify-event.sh`, `install.sh`, `test-mockup.sh`. Systemd units: `sintaris-backup.service/timer`, `sintaris-sysevent.service`. Sleep hook: `sintaris-sleep.sh`. | LOW | ✅ Done — 29/29 mockup tests pass |
+| 2 | 07:10 | local | Monitor update | Added `check_backup_health()` to `monitor.py` — alerts if last backup older than 2 days | LOW | ✅ Done |
+| 3 | 07:15 | local | Notification fix | Created `copilot-notify/tg_update.py` — helper to call `tg_status` from bash. Fixes `/status` always showing "idle". Added explanation to `copilot-instructions.md`. | LOW | ✅ Done |
+| 4 | 07:20 | local | Docs update | Updated `06-vps-dev2null.de.md`, `07-vps-dev2null.website.md` (added Backup sections), `README.md` (backup/ dir), `copilot-instructions.md` (dir tree + tg_update.py helper) | LOW | ✅ Done |
+
+**Session 5 total: 4 changes — all ✅**  
+**Backup coverage:** MySQL, PostgreSQL, Docker volumes+configs, nginx/postfix/ssl configs, /opt runtimes  
+**Events notified:** startup, shutdown, reboot, sleep, resume, backup start/done/fail
