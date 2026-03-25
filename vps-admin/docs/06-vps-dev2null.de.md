@@ -48,61 +48,141 @@ All services are enabled and running:
 
 ## Docker Containers
 
-| Container | Image | Port | URL |
-|-----------|-------|------|-----|
-| nextcloud-docker-app-1 | nextcloud | 8080 | https://cloud.dev2null.de |
-| nextcloud-docker-db-1 | mariadb | 3306 (internal) | — |
-| n8n-docker-n8n-1 | n8n:1.113.3 | 5678 | https://automata.dev2null.de |
-| n8n-runners | worksafety-runners | 5680 | — (internal) |
-| expert-tgrm-bot | expert-tgrm-bot | 8081 | — |
-| bot_assistance | universal-tgrm-bot | 8083 | — |
-| espocrm | espocrm/espocrm | 8888 | https://crm.dev2null.de |
-| metabase | metabase/metabase | 3000 | — |
-| pgadmin-pgadmin-1 | pgadmin4 | 9080 | https://db.dev2null.de |
+### Running containers
 
-### Docker Compose Locations
+| Container | Image | Compose path | Port binding | Status |
+|-----------|-------|-------------|--------------|--------|
+| nextcloud-docker-app-1 | nextcloud:latest | `/opt/nextcloud-docker/` | `0.0.0.0:8080→80` ⚠️ | ✅ Up |
+| nextcloud-docker-db-1 | mariadb:latest | `/opt/nextcloud-docker/` | internal 3306 | ✅ Up |
+| n8n-docker-n8n-1 | n8n:1.113.3 | `/opt/n8n-docker/` | `127.0.0.1:5678` ✅ | ✅ Up |
+| n8n-runners | worksafety-runners | `/opt/n8n-docker/` | 5680 (internal) | ✅ Up |
+| espocrm | espocrm/espocrm:latest | `/opt/espocrm/` | `0.0.0.0:8888→80` ⚠️ | ✅ Up |
+| metabase | metabase/metabase:latest | `/opt/metabase/` | `0.0.0.0:3000→3000` ⚠️ | ✅ Up |
+| pgadmin-pgadmin-1 | dpage/pgadmin4:latest | `/opt/pgadmin/` | `127.0.0.1:9080→80` ✅ | ✅ Up |
+| expert-tgrm-bot | expert-tgrm-bot | `/opt/bots/expert-tgrm-bot/` | `0.0.0.0:8081→8080` ⚠️ | ✅ Up |
+| bot_assistance | universal-tgrm-bot | `/opt/bots/gpt-tgrm-bot/universal-tgrm-bot/` | `0.0.0.0:8083→8082` ⚠️ | ✅ Up |
 
-| Service | Path |
-|---------|------|
-| Nextcloud | `/opt/nextcloud-docker/docker-compose.yml` |
-| N8N | `/opt/n8n-docker/docker-compose.yml` |
-| EspoCRM | `/opt/espocrm/docker-compose.yml` |
-| Metabase | `/opt/metabase/docker-compose.yml` |
-| PGAdmin | `/opt/pgadmin/docker-compose.yml` |
-| Expert bot | `/opt/bots/expert-tgrm-bot/docker-compose.yml` |
-| Assistance bot | `/opt/bots/gpt-tgrm-bot/universal-tgrm-bot/docker-compose.yml` |
+### Stopped containers
+
+| Container | Image | Last status | Notes |
+|-----------|-------|-------------|-------|
+| bot_learning | learning-tgrm-bot | Exited (137) 8 months ago | `/opt/bots/learning-tgrm-bot/` — inactive |
+
+> ⚠️ Port bindings marked with ⚠️ expose services directly to the internet, bypassing nginx.  
+> Fix: change `"PORT:PORT"` → `"127.0.0.1:PORT:PORT"` in each compose file.
+
+### Docker disk usage
+
+| Type | Total | Reclaimable |
+|------|-------|-------------|
+| Images | 58 images, 36.16 GB | **30.79 GB** (33 dangling `<none>` images) |
+| Containers | 886.8 MB | ~419 KB (running containers) |
+| Build cache | 5.96 GB | **5.96 GB** (100%) |
+| **Total reclaimable** | | **~36.75 GB** |
+
+```bash
+# Safe cleanup (dangling images + stopped containers + unused networks)
+sudo docker image prune -f          # removes dangling <none> images
+sudo docker builder prune -f        # removes build cache
+sudo docker rm bot_learning         # remove stopped learning bot container (if no longer needed)
+```
 
 ---
 
 ## Nginx Virtual Hosts
 
-| Domain | Backend | Notes |
-|--------|---------|-------|
-| cloud.dev2null.de | localhost:8080 | Nextcloud |
-| automata.dev2null.de | localhost:5678 | N8N |
-| crm.dev2null.de | localhost:8888 | EspoCRM |
-| mail.dev2null.de | php-fpm | Roundcube webmail |
-| webmail.dev2null.de | php-fpm | Roundcube webmail |
-| webmail.sintaris.eu | php-fpm | Roundcube webmail |
-| webmail.sintaris.net | php-fpm | Roundcube webmail |
-| webmail.sintaru.com | php-fpm | Roundcube webmail |
-| db.dev2null.de | localhost:9080 | PGAdmin |
-| dbview.dev2null.de | localhost:9080 | PGAdmin |
-| cloud.sintaris.eu | localhost:8080 | Nextcloud |
-| cloud.sintaris.net | localhost:8080 | Nextcloud |
-| crm.sintaris.net | localhost:8888 | EspoCRM |
-| agents.sintaris.net | — | OpenClaw |
-| control.sintaris.net | — | Management UI |
-| apps.dev2null.de | localhost:5678 | N8N |
-| wp.sintaris.eu | — | WordPress |
-| wp.sintaris.net | — | WordPress |
-| sintaris.eu | — | Web |
-| sintaris.net | — | Web |
-| sintaru.com | — | Web |
+See **[External Access — Service Catalog](#external-access--service-catalog)** below for the full breakdown with admin URLs and feature details.
+
+| Domain | Backend | SSL |
+|--------|---------|-----|
+| cloud.dev2null.de / cloud.sintaris.{eu,net} | 127.0.0.1:8080 | ✅ |
+| automata.dev2null.de / apps.dev2null.de | 127.0.0.1:5678 | ✅ |
+| crm.dev2null.de / crm.sintaris.net | 127.0.0.1:8888 | ✅ |
+| db.dev2null.de / dbview.dev2null.de / pg.dev2null.de | 127.0.0.1:9080 | partial |
+| mail/webmail.dev2null.de / webmail.sintaris.{eu,net} / webmail.sintaru.com | php8.3-fpm | ✅ |
+| mail.sintaris.{net,eu} / mail.sintaru.com | php8.3-fpm | ✅ |
+| agents.sintaris.net | 127.0.0.1:18789 (SSH tunnel) | ✅ |
+| sintaris.{eu,net} / sintaru.com / wp.sintaris.{eu,net} / sqliteweb.dev2null.de | static/app | partial |
 
 ---
 
-## Databases
+## External Access — Service Catalog
+
+All services accessible from the internet via HTTPS through nginx.  
+**Direct container/database ports should NOT be accessible from internet** — nginx is the only entry point.
+
+### Web Applications
+
+| Service | Public URL(s) | Backend | Admin URL | Notes |
+|---------|--------------|---------|-----------|-------|
+| **Nextcloud** | https://cloud.dev2null.de | 127.0.0.1:8080 | /settings/admin | Files, Docs, Talk, Calendar, Contacts |
+| | https://cloud.sintaris.eu | same | | alias domain |
+| | https://cloud.sintaris.net | same | | alias domain |
+| **N8N** | https://automata.dev2null.de | 127.0.0.1:5678 | /settings | Automation workflows |
+| | https://apps.dev2null.de | same | | alias |
+| **EspoCRM** | https://crm.dev2null.de | 127.0.0.1:8888 | /admin | CRM |
+| | https://crm.sintaris.net | same | | alias domain |
+| **PGAdmin** | https://db.dev2null.de | 127.0.0.1:9080 | / | PostgreSQL admin UI |
+| | https://dbview.dev2null.de | same | | alias |
+| | https://pg.dev2null.de | same | | alias |
+| **Roundcube** | https://mail.dev2null.de | php8.3-fpm | /admin/ | Webmail + PostfixAdmin |
+| | https://webmail.dev2null.de | same | | |
+| | https://webmail.sintaris.eu | same | | |
+| | https://webmail.sintaris.net | same | | |
+| | https://webmail.sintaru.com | same | | |
+
+### Nextcloud — what is accessible
+
+| Feature | URL path | Notes |
+|---------|----------|-------|
+| Files | /files | WebDAV also at /remote.php/dav |
+| Documents (Nextcloud Office) | /apps/richdocuments | Collaborative editing |
+| Talk (video/chat) | /apps/spreed | WebRTC via coturn (ports 3478/5349) |
+| Calendar | /apps/calendar | CalDAV at /remote.php/dav |
+| Contacts | /apps/contacts | CardDAV at /remote.php/dav |
+| Admin settings | /settings/admin | Requires admin account |
+| WebDAV | /remote.php/dav/ | For desktop sync clients |
+
+### Mail services (direct port access)
+
+| Protocol | Port | Encryption | Purpose |
+|----------|------|-----------|---------|
+| SMTP | 25 | STARTTLS | Receive incoming mail (MX) |
+| SMTP Submission | 587 | STARTTLS | Send mail (mail clients) |
+| IMAPS | 993 | TLS | Read mail — encrypted ✅ |
+| POP3S | 995 | TLS | Read mail — encrypted ✅ |
+| IMAP | 143 | none | ⚠️ unencrypted — recommend blocking |
+| POP3 | 110 | none | ⚠️ unencrypted — recommend blocking |
+
+### Database access (admin only — via PGAdmin/phpMyAdmin)
+
+| Database | Access method | Public URL |
+|----------|--------------|-----------|
+| **PostgreSQL 17** | PGAdmin web UI | https://db.dev2null.de |
+| **MySQL 8.0** | No web UI deployed yet | — (localhost:3306 only) |
+| **MariaDB (Nextcloud)** | Container-internal only | — |
+
+> ⚠️ Direct port access to databases from internet must be blocked (see Security section).
+
+### Telegram Bots (internal — not publicly accessible via browser)
+
+| Container | Bot | Config path | Status |
+|-----------|-----|-------------|--------|
+| expert-tgrm-bot | Expert/assistant bot | `/opt/bots/expert-tgrm-bot/` | ✅ Running |
+| bot_assistance | Universal assistant bot | `/opt/bots/gpt-tgrm-bot/universal-tgrm-bot/` | ✅ Running |
+| bot_learning | Learning bot | `/opt/bots/learning-tgrm-bot/` | ❌ Stopped (8 months) |
+
+### Other services (internal)
+
+| Service | URL | Notes |
+|---------|-----|-------|
+| **Metabase** | Not publicly exposed | Running on :3000 — no nginx vhost. Should be behind auth proxy if needed |
+| **agents.sintaris.net** | https://agents.sintaris.net | OpenClaw AI gateway — tunneled via SSH |
+| **sqliteweb.dev2null.de** | http://sqliteweb.dev2null.de | SQLite web viewer — HTTP only, no HTTPS |
+
+---
+
+
 
 ### MySQL 8.0 — localhost:3306
 ```
