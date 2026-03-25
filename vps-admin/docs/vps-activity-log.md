@@ -87,3 +87,15 @@ Format defined in [vps-activity-protocol.md](vps-activity-protocol.md).
 | 3 | 08:18 | dev2null.website | Deploy | Deployed updated monitor.py | LOW | ✅ Done |
 
 **Session 7 total: 3 changes — all ✅**
+
+---
+
+## Session 8 — 2026-03-25
+
+| # | Time (UTC) | Server | Action | Description | Risk | Result |
+|---|------------|--------|--------|-------------|------|--------|
+| 1 | 10:20 | dev2null.de | Backup run | Deployed `backup.sh` to `/opt/sintaris-backup/`, ran full backup (configs, MySQL, PostgreSQL, Docker volumes). Nextcloud data volume excluded via `VOLUMES_SKIP`. | LOW | ✅ Done — 338MB archived |
+| 2 | 10:20 | local | Script update | Added `VOLUMES_SKIP` env var to `backup.sh` — skip large volumes by name. Updated `backup.env.example`. | LOW | ✅ Done |
+| 3 | 10:30 | local | USB transfer | Rsynced backup from dev2null.de to `/media/stas/Linux-Backup/dev2null.de/` (USB disk). | LOW | ✅ Done — 338MB transferred |
+
+**Session 8 total: 3 changes — all ✅**

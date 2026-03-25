@@ -153,4 +153,18 @@ Each session block contains a table with one row per completed request:
 
 **Session 7 total: 2 items, ~8 turns**
 
+---
+
+## Session 8 — 2026-03-25 (VPS backup run + VOLUMES_SKIP)
+
+**Requests:**
+1. "external usb disk is plugged in please run backups"
+2. "disable backup nextcloud data"
+
+| # | Time (UTC) | Request | What was done | Complexity | Turns | Commits | Status |
+|---|------|---------|---------------|-----------|-------|---------|--------|
+| 1 | 10:20 | Run backups to USB | Deployed backup.sh to dev2null.de, initial run aborted (Nextcloud volume 31GB+). Added VOLUMES_SKIP to backup.sh + backup.env.example. Restarted backup (88s), rsync 338MB to USB. | 3 | 12 | — | done |
+
+**Session 8 total: 1 item, ~12 turns**
+
 *Protocol maintained by Copilot. Updated at end of every session.*

@@ -67,6 +67,8 @@ if ! $DRY_RUN && [[ -z "$TG_BOT_TOKEN" || -z "$TG_CHAT_ID" ]]; then
 fi
 : "${BACKUP_RETENTION_DAYS:=7}"
 : "${BACKUP_MAIL_DATA:=no}"
+# Space-separated list of Docker volume names to skip (e.g. large media volumes)
+: "${VOLUMES_SKIP:=}"
 
 BACKUP_BASE="${BACKUP_MOUNT}/backups/${HOSTNAME_REAL}"
 BACKUP_DIR="${BACKUP_BASE}/${DATE}"
@@ -323,6 +325,15 @@ backup_docker() {
         local volumes
         volumes="$(docker volume ls -q 2>/dev/null || true)"
         for vol in $volumes; do
+            # Skip volumes in VOLUMES_SKIP list
+            local skip=false
+            for skip_vol in $VOLUMES_SKIP; do
+                [[ "$vol" == "$skip_vol" ]] && skip=true && break
+            done
+            if $skip; then
+                log "Skipping Docker volume (in VOLUMES_SKIP): $vol"
+                continue
+            fi
             log "Dumping Docker volume: $vol"
             docker run --rm \
                 -v "${vol}:/data:ro" \
