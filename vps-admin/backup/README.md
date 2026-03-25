@@ -36,6 +36,7 @@ VOLUMES_SKIP=nextcloud-docker_nextcloud
 vps-admin/backup/
 ├── backup.sh                 Main backup script
 ├── recover.sh                Recovery / restore script
+├── image-backup.py           Provider image/snapshot backup (Netcup + IONOS)
 ├── notify-event.sh           System event notifier (startup/shutdown/sleep/resume)
 ├── install.sh                Deploy to VPS
 ├── test-mockup.sh            Local mockup test (no server needed)
@@ -222,6 +223,110 @@ sudo /opt/sintaris-backup/recover.sh restore --date 2026-03-25 --dry-run
 6. Restore databases: `--target mysql` then `--target postgres`
 7. Restore Docker: `--target docker` then `docker compose up -d` in each `/opt/*/`
 8. Verify services: `systemctl status` + test endpoints
+
+### Alternative: restore from provider image snapshot
+
+If a Netcup snapshot exists (see [Image Backup](#image-backup)), recovery is faster:
+```bash
+# On local machine:
+cd vps-admin/backup
+python3 image-backup.py list --server netcup   # find snapshot name
+python3 image-backup.py restore --server netcup --snapshot copilot-2026-03-25
+```
+The server rolls back to the exact snapshot state and reboots. No reinstall needed.
+
+---
+
+## Image Backup (Provider Snapshots)
+
+> **What it is:** A complete disk image of the entire VPS, taken at the hypervisor level.  
+> Faster to restore than file-level backup — full server state in one step.  
+> Complements (does NOT replace) the file-level `backup.sh`.
+
+### Supported providers
+
+| Server | Provider | Method |
+|--------|----------|--------|
+| dev2null.de | Netcup | SCP API — fully automated (Copy-on-Write snapshots) |
+| dev2null.website | IONOS VPS | **Manual** via https://my.ionos.com — no public REST API |
+| dev2null.website | IONOS Cloud | IONOS Cloud API — if/when migrated to IONOS Cloud |
+
+### Setup
+
+Add credentials to `../.env` (root of `sintaris-srv`):
+
+```bash
+# Netcup — get from https://www.customercontrolpanel.de → Master Data → API
+NETCUP_CUSTOMER_ID=your_customer_number
+NETCUP_API_KEY=your_api_key
+NETCUP_API_PASS=your_api_password
+NETCUP_SERVER_NAME=v1234567        # shown in SCP panel
+
+# IONOS Cloud — only for IONOS Cloud DCD servers
+# get from https://dcd.ionos.com → Management → API Keys
+IONOS_API_TOKEN=your_token
+IONOS_SERVER_ID=your_server_uuid
+IONOS_DATACENTER_ID=your_dc_uuid
+```
+
+**Getting Netcup API credentials:**
+1. Log in to https://www.customercontrolpanel.de
+2. Go to **Master Data → API → Manage API keys**
+3. Create a new API key — note the Key and Password
+4. Your customer number is displayed top-right
+5. Your server name is shown in https://www.servercontrolpanel.de
+
+### Usage
+
+```bash
+cd vps-admin/backup
+
+# Check which credentials are configured
+python3 image-backup.py status
+
+# Create snapshot
+python3 image-backup.py create                         # both servers
+python3 image-backup.py create --server netcup         # dev2null.de only
+python3 image-backup.py create --description "pre-upgrade-2026-03-25"
+
+# List existing snapshots
+python3 image-backup.py list
+python3 image-backup.py list --server netcup
+
+# Restore from snapshot (interactive confirmation required)
+python3 image-backup.py restore --server netcup --snapshot copilot-2026-03-25
+
+# Delete old snapshot
+python3 image-backup.py delete --server netcup --snapshot copilot-2026-03-24
+```
+
+### IONOS VPS — Manual procedure
+
+Since dev2null.website is a **legacy IONOS VPS** (no REST API):
+
+1. Log in at **https://my.ionos.com**
+2. Go to **Server & Cloud → dev2null.website**
+3. Click **Snapshots** tab → **Create Snapshot**
+4. Enter name (e.g. `backup-2026-03-25`) and confirm
+5. To restore: **Snapshots** → click **Restore** next to the snapshot
+
+> IONOS VPS snapshot limits depend on your plan — check your contract.
+
+### Restore notes
+
+- **Netcup:** Server is stopped, rolled back, and rebooted automatically. All data after the snapshot creation date is lost.
+- **IONOS Cloud:** Volume-level restore — server should be stopped first for consistency.
+- Both providers keep their own snapshot retention — check provider billing for storage costs.
+
+### When to use image backup vs. file backup
+
+| Scenario | Use |
+|----------|-----|
+| Quick pre-maintenance safety snapshot | `image-backup.py create` |
+| Regular incremental DB + config backup | `backup.sh` (daily, automated) |
+| Restore single DB or service | `recover.sh --target mysql/postgres/docker` |
+| Bare-metal disaster recovery | image snapshot → instant rollback |
+| Migrate to new host | image backup + provider restore |
 
 ---
 

@@ -15,8 +15,9 @@ Use this skill whenever Copilot is asked to backup, restore, or check backup sta
 
 | Component | Location on VPS | Purpose |
 |-----------|----------------|---------|
-| `backup.sh` | `/opt/sintaris-backup/backup.sh` | Main backup script |
+| `backup.sh` | `/opt/sintaris-backup/backup.sh` | Main file-level backup script |
 | `recover.sh` | `/opt/sintaris-backup/recover.sh` | Restore script |
+| `image-backup.py` | `vps-admin/backup/image-backup.py` | Provider image/snapshot backup (run locally) |
 | `notify-event.sh` | `/opt/sintaris-backup/notify-event.sh` | System event alerts |
 | Config | `/opt/sintaris-backup/.env` | Tokens, mount path, retention |
 | State | `/opt/sintaris-backup/.last_backup` | ISO timestamp of last success |
@@ -280,6 +281,87 @@ Use this when recovering onto a new/reinstalled VPS.
    ```bash
    sudo python3 /opt/sintaris-monitor/monitor.py daily
    ```
+
+### Alternative: restore from provider image snapshot
+
+If a Netcup snapshot exists, recovery is faster and doesn't require reinstalling:
+```bash
+cd vps-admin/backup
+python3 image-backup.py list --server netcup   # find snapshot name
+python3 image-backup.py restore --server netcup --snapshot copilot-2026-03-25
+```
+Server rolls back to exact snapshot state and reboots automatically.
+
+---
+
+## Image Backup (Provider Snapshots)
+
+> Full-disk snapshots taken at the hypervisor level.  
+> Faster than file-level restore. Complements (does NOT replace) `backup.sh`.  
+> Script runs **locally** (not on the VPS).
+
+### Provider support
+
+| Server | Provider | Method |
+|--------|----------|--------|
+| dev2null.de | Netcup | SCP API — fully automated |
+| dev2null.website | IONOS VPS | Manual via https://my.ionos.com |
+| dev2null.website | IONOS Cloud | IONOS Cloud API (if migrated) |
+
+### Required credentials in `../.env`
+
+```bash
+# Netcup — from https://www.customercontrolpanel.de → Master Data → API
+NETCUP_CUSTOMER_ID=your_customer_number
+NETCUP_API_KEY=your_api_key
+NETCUP_API_PASS=your_api_password
+NETCUP_SERVER_NAME=v1234567
+
+# IONOS Cloud (optional — only if on IONOS Cloud DCD)
+IONOS_API_TOKEN=your_token
+IONOS_SERVER_ID=your_server_uuid
+IONOS_DATACENTER_ID=your_dc_uuid
+```
+
+### Common image backup operations
+
+```bash
+cd vps-admin/backup
+
+# Check credential status
+python3 image-backup.py status
+
+# Create snapshot (before major changes)
+python3 image-backup.py create --server netcup
+python3 image-backup.py create --description "pre-upgrade-2026-03-25"
+
+# List existing snapshots
+python3 image-backup.py list --server netcup
+
+# Restore (interactive — requires typed 'YES' confirmation)
+python3 image-backup.py restore --server netcup --snapshot copilot-2026-03-25
+
+# Delete old snapshot
+python3 image-backup.py delete --server netcup --snapshot copilot-2026-03-24
+```
+
+### IONOS legacy VPS — manual steps
+
+dev2null.website has no REST API for snapshots:
+1. Log in at **https://my.ionos.com**
+2. Server & Cloud → select dev2null.website
+3. Snapshots → **Create Snapshot** → enter name → confirm
+4. To restore: Snapshots → **Restore**
+
+### When to use which backup
+
+| Situation | Tool |
+|-----------|------|
+| Before maintenance / upgrades | `image-backup.py create` |
+| Regular daily incremental backup | `backup.sh` (automated) |
+| Restore single DB / service | `recover.sh --target ...` |
+| Full disaster recovery (fast) | `image-backup.py restore` |
+| Migrate server to new host | image snapshot + provider console |
 
 ---
 
