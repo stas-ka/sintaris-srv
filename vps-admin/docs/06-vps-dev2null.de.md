@@ -300,23 +300,36 @@ Password: ${NEXTCLOUD_DB_PASS}
 | fail2ban | Active — **SSH only** (1 jail). Postfix, dovecot, nginx NOT protected. |
 | coturn | TURN/STUN server — ports 3478 (UDP/TCP), 5349 (TLS) |
 | SSL | Let's Encrypt via certbot, auto-renewed |
-| **UFW** | **⚠️ INACTIVE — no software firewall running** |
+| **Netcup firewall** | ✅ **ACTIVE** — template `sintaris-production-v1` applied 2026-03-25 |
+| **UFW** | ⚠️ INACTIVE (Netcup network firewall used instead — not affected by Docker bypass issue) |
 | SSH | Key-based auth only, password auth disabled |
 
-### ⚠️ Security issues found (2026-03-25 audit)
+### Netcup firewall — active rules (template: sintaris-production-v1)
+
+| Port(s) | Protocol | Action | Service |
+|---------|----------|--------|---------|
+| 22 | TCP | ✅ Allow | SSH |
+| 25 | TCP | ✅ Allow | SMTP (receive mail) |
+| 80 | TCP | ✅ Allow | HTTP (nginx + certbot) |
+| 443 | TCP | ✅ Allow | HTTPS (nginx) |
+| 587 | TCP | ✅ Allow | SMTP submission |
+| 993 | TCP | ✅ Allow | IMAPS |
+| 995 | TCP | ✅ Allow | POP3S |
+| 3478 | TCP+UDP | ✅ Allow | STUN/TURN (Nextcloud Talk) |
+| 5349 | TCP+UDP | ✅ Allow | TURNS/STUNS (Nextcloud Talk TLS) |
+| ICMP | — | ✅ Allow | Ping |
+| **all other** | any | ❌ Drop | Default deny |
+
+**Verified blocked** (tested 2026-03-25): 110, 143, 3000, 5432, 8000, 8080, 8888
+
+### Remaining security issues (lower priority — blocked at network level)
 
 | Severity | Issue | Recommendation |
 |----------|-------|----------------|
-| 🔴 HIGH | UFW is inactive — no firewall | Enable UFW with rules below |
-| 🔴 HIGH | PostgreSQL (5432) exposed to internet | Block in UFW; bind to 127.0.0.1 in postgres config |
-| 🔴 HIGH | Demo app uvicorn:8000 exposed | Stop or bind to 127.0.0.1 |
-| ⚠️ MED | Metabase (3000) exposed to internet | Bind docker to 127.0.0.1:3000 in compose |
-| ⚠️ MED | Nextcloud (8080) directly reachable | Bind docker to 127.0.0.1:8080 in compose |
-| ⚠️ MED | EspoCRM (8888) directly reachable | Bind docker to 127.0.0.1:8888 in compose |
-| ⚠️ MED | Bot ports 8081, 8083 exposed | Bind docker to 127.0.0.1 in compose |
-| ⚠️ LOW | POP3 (110) and IMAP (143) unencrypted | Block in UFW — clients should use 993/995 |
+| ⚠️ MED | Docker ports still bound to 0.0.0.0 internally | Bind to 127.0.0.1 in compose files (defense in depth) |
+| ⚠️ LOW | POP3 (110) and IMAP (143) still listening on host | Disable in Dovecot config — blocked at firewall already |
 | ⚠️ LOW | fail2ban only protects SSH | Add jails: postfix, dovecot, nginx |
-| ⚠️ LOW | Docker bypasses UFW by default | Use DOCKER-USER iptables chain or bind ports to 127.0.0.1 |
+| ⚠️ LOW | Demo app uvicorn:8000 still running | Stop service or bind to 127.0.0.1 |
 
 ### Recommended UFW configuration
 

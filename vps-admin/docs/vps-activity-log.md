@@ -111,4 +111,21 @@ Format defined in [vps-activity-protocol.md](vps-activity-protocol.md).
 | 3 | 15:01 | dev2null.website | New service | Deployed backup.sh + .env to `/opt/sintaris-backup/`. Ran backup — `.last_backup` created 2026-03-25T15:01:43. Silences monitoring alert "no backup record found". | MED | ✅ Done |
 | 4 | 15:05 | local | Instructions update | Strengthened `⛔ Owner Confirmation Rule` in copilot-instructions.md: tg_ask is PRIMARY channel, ask_user is fallback only. Added mount/unmount disk, transfers >100MB, ops >5min to critical categories. | LOW | ✅ Done — `202dc0e` |
 
-**Session 9 total: 4 changes — 3 ✅, 1 ⏳ (Nextcloud backup running)**
+**Session 9 total: 4 changes — all ✅ (Nextcloud backup confirmed finished: 132 GB)**
+
+---
+
+## Session 10 — 2026-03-25
+
+| # | Time (UTC) | Server | Action | Description | Risk | Result |
+|---|------------|--------|--------|-------------|------|--------|
+| 1 | 15:30 | dev2null.de | Bug fix | Changed `BACKUP_MOUNT=/tmp/sintaris-backup-run` → `/opt/sintaris-backup-data/` (persistent). Created dir. Old `.env` backed up as `.env.bak`. | LOW | ✅ Done — `c725c63` |
+| 2 | 15:30 | dev2null.de + website | Cleanup | Removed all `/tmp` backup artifacts from both servers (logs, scripts, temp dirs). | LOW | ✅ Done |
+| 3 | 15:40 | local | Instructions fix | Fixed tg_ask double-confirmation bug in copilot-instructions.md. Forbidden pattern documented: `tg_update.py ask` + `ask_user` = double-confirmation. | LOW | ✅ Done — `ffc6c49` |
+| 4 | 15:50 | local | Docs update | Updated backup/README.md: current backup status table, SSH pipe method, BACKUP_MOUNT config table, website recovery guide. | LOW | ✅ Done — `e8f197d` |
+| 5 | 16:00 | local | Security audit | Scanned all open ports on dev2null.de. Found UFW inactive, 9 dangerous ports exposed. Documented in 06-vps-dev2null.de.md: port table, nginx vhosts, security issues, recommended UFW config. | LOW | ✅ Done — `6b69871` |
+| 6 | 16:10 | local | Docs update | Added full service catalog to 06-vps-dev2null.de.md: containers (running/stopped), Docker disk audit (36.75 GB reclaimable), External Access section, Nextcloud features, mail protocols, bots status. | LOW | ✅ Done — `400d1de` |
+| 7 | 16:15 | Netcup SCP | Security | Created firewall template `sintaris-production-v1` and applied to dev2null.de network interface. Blocks: 110, 143, 3000, 5432, 8000, 8080, 8888. Verified via port scan. | HIGH | ✅ Done — verified |
+| 8 | 16:20 | local | Docs update | Updated 06-vps-dev2null.de.md: security section updated with active Netcup firewall rules table, verified blocked ports, remaining lower-priority issues. | LOW | ✅ Done |
+
+**Session 10 total: 8 changes — all ✅**
