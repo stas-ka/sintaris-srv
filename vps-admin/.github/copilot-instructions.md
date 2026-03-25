@@ -13,11 +13,13 @@ The `copilot-notify` MCP server runs at `http://localhost:7340/sse` and is alway
 | When | Tool | What to send |
 |------|------|-------------|
 | Start of every major step | `tg_status` | Current phase, e.g. `"Analyzing disk usage on dev2null.website"` |
-| Before a critical action | `tg_ask` | Describe action + risk + Yes/No buttons — **wait for reply** |
+| Before a critical action | `tg_ask` **MCP tool** | Describe action + risk + Yes/No buttons — **blocks and waits for reply** |
 | After completing a significant step | `tg_notify` | Full result / output |
 | Task is fully done | `tg_complete` | Full summary, `wait_for_task=true` |
 
 **Failure to call `tg_complete` at the end of a task is a bug.**  
+**Using `tg_update.py ask` + `ask_user` together forces double-confirmation — this is forbidden.**  
+Use the `tg_ask` MCP tool directly; it blocks until Telegram reply arrives.  
 Full usage instructions: `./copilot-notify/AGENT.md`
 
 ### ⚠️ Why `/status` shows "idle — no active session"
@@ -138,19 +140,31 @@ The owner receives the request on their phone even when not watching the Copilot
 `ask_user` in Copilot CLI is a **fallback only** — use it only if the MCP server is confirmed unavailable (`curl http://localhost:7340/health` fails).  
 **Never silently proceed because the user already answered in chat — each critical step needs its own `tg_ask`.**
 
+### ⛔ NEVER call `tg_update.py ask` + `ask_user` together
+
+`tg_update.py ask` is **non-blocking** (returns 202 immediately — does NOT wait for a reply).  
+`tg_ask` MCP tool is **blocking** (pauses Copilot until the user replies in Telegram).
+
+**Correct pattern:**
 ```
+# Call the MCP tg_ask tool directly — it blocks and returns the user's choice
 tg_ask(
   question="Step N — [Server]: [What will be done]\nRisk: MED\nExpected: [outcome]\n\nProceed?",
   options=["Yes", "No"]
 )
+# Proceed only if result == "Yes"
 ```
 
-- A clear description of **what** will be done
-- **Why** it is needed
-- **Risk** level (LOW / MED / HIGH)
-- Expected outcome
+**Forbidden pattern (forces double-confirmation):**
+```
+# WRONG — tg_update.py ask is non-blocking:
+python3 tg_update.py ask "Proceed?" "Yes,No"   # returns 202 immediately
+ask_user(...)                                    # NOW Copilot waits for CLI answer too
+# User must confirm TWICE — once in Telegram AND once in the CLI
+```
 
-**Never batch multiple critical steps into a single confirmation.** Ask one step at a time.
+The owner should only ever need to confirm **once, in Telegram**.  
+If `tg_ask` MCP tool returns the answer, do NOT also call `ask_user`.
 
 ### 🚫 If the owner is unavailable (tg_ask/ask_user returns TIMEOUT / no response):
 
