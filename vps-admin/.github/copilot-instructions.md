@@ -5,6 +5,23 @@ Credentials are in `../.env` (gitignored — never commit real values).
 
 ---
 
+## 📲 Telegram Notifications — MANDATORY
+
+The `copilot-notify` MCP server runs at `http://localhost:7340/sse` and is always available.  
+**You MUST use these tools in every session — not just when you remember to:**
+
+| When | Tool | What to send |
+|------|------|-------------|
+| Start of every major step | `tg_status` | Current phase, e.g. `"Analyzing disk usage on dev2null.website"` |
+| Before a critical action | `tg_ask` | Describe action + risk + Yes/No buttons — **wait for reply** |
+| After completing a significant step | `tg_notify` | Full result / output |
+| Task is fully done | `tg_complete` | Full summary, `wait_for_task=true` |
+
+**Failure to call `tg_complete` at the end of a task is a bug.**  
+Full usage instructions: `./copilot-notify/AGENT.md`
+
+---
+
 ## Servers
 
 | Host | IP | User | Auth | Role |
