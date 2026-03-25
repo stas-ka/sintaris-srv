@@ -122,20 +122,139 @@ journalctl -u sintaris-monitor.service -n 30
 
 ## Backup
 
-- **Scripts:** `/opt/sintaris-backup/` (deployed via `vps-admin/backup/install.sh`)
+- **Scripts:** `/opt/sintaris-backup/` — **deployed 2026-03-25**
 - **Config:** `/opt/sintaris-backup/.env`
-- **Schedule:** daily at 02:00 UTC (± 15 min)
-- **Storage:** `BACKUP_MOUNT` (must be a mounted volume — set in `.env`)
+- **Last backup:** `2026-03-25T15:01:43` (`.last_backup` confirmed)
+- **Schedule:** manual only — disk too small (2.4 GB free) for a daily timer
+- **Storage:** runs to `/tmp/sintaris-backup-run/` — pipe results to USB
+
+### `.env` config on this server
 
 ```bash
-# Run backup manually
-sudo /opt/sintaris-backup/backup.sh
-
-# Dry-run
-sudo /opt/sintaris-backup/backup.sh --dry-run
-
-# List backups
-sudo /opt/sintaris-backup/recover.sh list
+BACKUP_MOUNT=/tmp/sintaris-backup-run
+BACKUP_MYSQL=no
+BACKUP_POSTGRES=no
+BACKUP_DOCKER=yes
+BACKUP_NGINX=yes
+BACKUP_SSL=yes
+BACKUP_OPT=yes
+BACKUP_MAIL_DATA=no
+VOLUMES_SKIP=
 ```
 
-Backup targets: nginx/haproxy configs, Docker configs, x-ui db, /opt runtimes
+### What backup.sh covers on this server
+
+| Target | Paths | Size |
+|--------|-------|------|
+| nginx config | `/etc/nginx/` | ~8 KB |
+| SSL certs | `/etc/letsencrypt/live/` | ~1 KB |
+| UFW rules | `/etc/ufw/` | ~4 KB |
+| Cron/systemd | `/etc/cron.d/`, `/etc/systemd/system/` | ~8 KB |
+| Docker | container configs | ~12 KB |
+| /opt | `sintaris-monitor`, `sintaris-backup` | ~28 KB |
+
+### ⚠️ NOT covered by backup.sh — backup manually
+
+These large service directories are not under `/opt` and must be backed up separately:
+
+| Path | Size | Service |
+|------|------|---------|
+| `/usr/local/x-ui/` | 222 MB | x-ui binary + web panel + data |
+| `/etc/x-ui/x-ui.db` | 76 KB | VPN user/inbound config database |
+| `/home/boh/webinar-bot/` | 129 MB | Webinar bot |
+| `/etc/haproxy/` | 40 KB | HAProxy config |
+
+```bash
+# Run backup.sh (to /tmp)
+source ../.env
+sshpass -p "${WEB_PASS}" ssh ${WEB_USER}@${WEB_HOST} \
+  "echo '${WEB_PASS}' | sudo -S /opt/sintaris-backup/backup.sh"
+
+# Dry-run
+sshpass -p "${WEB_PASS}" ssh ${WEB_USER}@${WEB_HOST} \
+  "sudo /opt/sintaris-backup/backup.sh --dry-run"
+```
+
+See `vps-admin/backup/README.md` for full USB backup workflow including large services.
+
+---
+
+## Recovery / New Host Install
+
+Provisioning a fresh dev2null.website replacement server:
+
+### 1. Base setup (Ubuntu 22.04 LTS x86_64)
+
+```bash
+apt update && apt upgrade -y
+apt install -y nginx haproxy docker.io sshpass
+timedatectl set-timezone UTC
+hostnamectl set-hostname dev2null.website
+```
+
+### 2. Restore nginx + SSL
+
+```bash
+# Extract from backup archive
+tar -xzf configs/etc_nginx.tar.gz -C /
+tar -xzf configs/ssl_live.tar.gz -C /etc/letsencrypt/
+systemctl reload nginx
+```
+
+### 3. Restore haproxy
+
+```bash
+tar -xzf configs/etc_haproxy.tar.gz -C /
+systemctl restart haproxy
+```
+
+### 4. Restore x-ui (VPN panel)
+
+```bash
+# From website-services-YYYY-MM-DD.tar.gz
+tar -xzf website-services-YYYY-MM-DD.tar.gz -C / ./usr/local/x-ui ./etc/x-ui
+systemctl enable --now x-ui
+```
+
+> Access x-ui panel at: `http://<server-ip>:54321` (local) or `https://dev2null.website:2096` (public)
+
+### 5. Restore amnezia-wg-easy
+
+```bash
+mkdir -p /opt/amnezia-wg-easy
+# Restore compose file from Docker backup archive
+# or recreate: pull image ghcr.io/imbtqd/amnezia-wg-easy:3
+docker compose -f /opt/amnezia-wg-easy/docker-compose.yml up -d
+```
+
+### 6. Restore webinar-bot
+
+```bash
+tar -xzf website-services-YYYY-MM-DD.tar.gz -C / ./home/boh/webinar-bot
+cp /etc/systemd/system/webinar.bot.service /etc/systemd/system/  # from configs backup
+systemctl enable --now webinar.bot
+```
+
+### 7. Restore swapfiles
+
+```bash
+# swapfile (512 MB)
+fallocate -l 512M /swapfile && chmod 600 /swapfile
+mkswap /swapfile && swapon /swapfile
+
+# swapfile2 (750 MB)  
+fallocate -l 750M /swapfile2 && chmod 600 /swapfile2
+mkswap /swapfile2 && swapon /swapfile2
+
+# Make permanent
+echo '/swapfile   none  swap  sw  0  0' >> /etc/fstab
+echo '/swapfile2  none  swap  sw  0  0' >> /etc/fstab
+```
+
+### 8. Redeploy monitoring and backup
+
+```bash
+# From local machine
+bash vps-admin/monitoring/install.sh dev2null.website
+# Deploy backup.sh (see backup README)
+```

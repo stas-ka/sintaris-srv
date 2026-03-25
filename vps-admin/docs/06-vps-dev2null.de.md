@@ -178,8 +178,14 @@ journalctl -u sintaris-monitor.service -n 50
 - **Storage:** `BACKUP_MOUNT` (must be a mounted volume — set in `.env`)
 - **Retention:** 7 days
 
+Backup targets: configs (nginx/postfix/ssl/fail2ban), MySQL, PostgreSQL, Docker compose + volumes, /opt
+
+> ⚠️ **Nextcloud data volume excluded from automated backups.**  
+> The `nextcloud-docker_nextcloud` volume is **~147 GB** — too large for daily rotation.  
+> Set `VOLUMES_SKIP=nextcloud-docker_nextcloud` in `.env` to skip it.
+
 ```bash
-# Run backup manually
+# Run backup manually (on server)
 sudo /opt/sintaris-backup/backup.sh
 
 # Dry-run (no changes)
@@ -195,7 +201,17 @@ sudo /opt/sintaris-backup/recover.sh restore --date 2026-03-25
 systemctl status sintaris-backup.timer
 ```
 
-Backup targets: configs (nginx/postfix/ssl), MySQL, PostgreSQL, Docker, /opt
+### Manual Nextcloud data backup (to USB)
+
+```bash
+# Pipe 147 GB Nextcloud volume directly to local USB — takes ~2 hours
+source ~/.../sintaris-srv/.env
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} \
+  'sudo tar -czf - -C /var/lib/docker/volumes/nextcloud-docker_nextcloud/_data .' \
+  > /media/stas/Linux-Backup/dev2null.de/nextcloud/nextcloud-data-$(date +%Y-%m-%d).tar.gz
+```
+
+See `vps-admin/backup/README.md` for full USB backup workflow.
 
 ---
 
