@@ -1,0 +1,15 @@
+{
+  "name": "copilot-notify",
+  "version": "1.0.0",
+  "description": "Copilot ↔ Telegram bidirectional notification MCP server",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "setup": "node setup.mjs",
+    "verify": "node setup.mjs --verify"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "zod": "^3.25.76"
+  }
+}
