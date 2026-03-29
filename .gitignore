@@ -5,3 +5,4 @@ client_secret*.json
 *.secret
 node_modules/
 vps-admin/backup/image-backup-log.json
+__pycache__/
