@@ -1,84 +1,410 @@
 # VPS Admin — Copilot Instructions
 
-## Server
+All VPS administration artifacts live in this directory (`vps-admin/`).  
+Credentials are in `../.env` (gitignored — never commit real values).
 
-Connection details are stored in `../.env` (gitignored). Load them before running SSH commands:
+---
 
+## 📲 Telegram Notifications — MANDATORY
+
+The `copilot-notify` MCP server runs at `http://localhost:7340/sse` and is always available.  
+**You MUST use these tools in every session — not just when you remember to:**
+
+| When | Tool | What to send |
+|------|------|-------------|
+| Start of every major step | `tg_status` | Current phase, e.g. `"Analyzing disk usage on dev2null.website"` |
+| Before a critical action | `tg_ask` **MCP tool** | Describe action + risk + Yes/No buttons — **blocks and waits for reply** |
+| After completing a significant step | `tg_notify` | Full result / output |
+| Task is fully done | `tg_complete` | Full summary, `wait_for_task=true` |
+
+**Failure to call `tg_complete` at the end of a task is a bug.**  
+**Using `tg_update.py ask` + `ask_user` together forces double-confirmation — this is forbidden.**  
+Use the `tg_ask` MCP tool directly; it blocks until Telegram reply arrives.  
+Full usage instructions: `./copilot-notify/AGENT.md`
+
+### ⚠️ Why `/status` shows "idle — no active session"
+
+`/status` only reflects the last `tg_status` call made via the MCP SSE protocol.  
+`openclaw-openclaw_message` sends Telegram messages but does **NOT** update `/status`.  
+**Always call `tg_status` (not just send a message) at the start of each major step.**
+
+Helper script to call MCP tools from bash (keeps SSE connection alive):
 ```bash
-source ../.env
-# Then use: ssh ${VPS_USER}@${VPS_HOST}
+python3 ./copilot-notify/tg_update.py status "Doing X — step N/M"
+python3 ./copilot-notify/tg_update.py notify "Step complete: ..." success
+python3 ./copilot-notify/tg_update.py ask "Proceed with Y?" "Yes,No"
+python3 ./copilot-notify/tg_update.py complete "Task done. Summary: ..."
 ```
 
-- **OS:** Ubuntu Server
+---
 
-## Stack
+## Servers
 
-| Service     | Notes |
-|-------------|-------|
-| **nginx**   | Web server / reverse proxy |
-| **PostgreSQL** | Database server |
-| **n8n**     | Workflow automation |
-| **WordPress** | CMS site(s) |
-| **EspoCRM** | CRM application |
-| **Nextcloud** | File storage / collaboration |
-| **Mail server** | Email (check `/etc/postfix`, `/etc/dovecot`) |
+| Host | IP | User | Auth | Role |
+|------|----|------|------|------|
+| dev2null.de | 152.53.224.213 | stas | SSH key `~/.ssh/id_ed25519` | **PRODUCTION — HIGHEST PRIORITY** |
+| dev2null.website | 82.165.231.93 | boh | password (`WEB_PASS` in `../.env`) | VPN/proxy server |
+
+> ⚠️ **dev2null.de is a live production server.** Back up configs before changes. Prefer `reload` over `restart`. Test with `--dry-run` / `-t` where possible.
+
+SSH helpers:
+```bash
+source ../.env
+# dev2null.de (key auth)
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST}
+# dev2null.website (password auth)
+sshpass -p "${WEB_PASS}" ssh ${WEB_USER}@${WEB_HOST}
+```
+
+---
+
+## Directory Structure
+
+```
+vps-admin/
+├── .github/copilot-instructions.md   ← this file
+├── docs/
+│   ├── 06-vps-dev2null.de.md         full infrastructure map (disaster recovery)
+│   ├── 07-vps-dev2null.website.md    VPN/proxy server docs
+│   ├── vps-activity-protocol.md      how to log every server change
+│   ├── vps-activity-log.md           running log of all Copilot-assisted changes
+│   └── vps-coding-protocol.md        ← SESSION PROTOCOL (mandatory, like vibe-coding-protocol.md)
+├── monitoring/
+│   ├── monitor.py                    health check daemon (deployed to both VPS)
+│   ├── monitor.env.example           config template for monitor
+│   ├── install.sh                    installer (deploys monitor to a VPS)
+│   └── sintaris-monitor*.service/timer  systemd unit files
+├── backup/
+│   ├── backup.sh                     main backup script (MySQL/PG/Docker/configs)
+│   ├── recover.sh                    recovery / restore script
+│   ├── notify-event.sh               system event notifier (startup/shutdown/sleep)
+│   ├── install.sh                    deploy backup system to a VPS
+│   ├── test-mockup.sh                local dry-run test suite (29 checks)
+│   ├── backup.env.example            config template
+│   ├── sintaris-backup.service/timer daily backup systemd units
+│   ├── sintaris-sysevent.service     startup/shutdown event service
+│   ├── sintaris-sleep.sh             sleep/resume hook
+│   └── README.md                     full documentation
+├── copilot-notify/
+│   ├── server.mjs                    MCP server v2 (HTTP/SSE, Docker)
+│   ├── setup.mjs                     interactive setup + HMAC sign
+│   ├── tg_update.py                  helper to call tg_status/tg_notify from bash
+│   ├── docker-compose.yml            Docker service (port 7340)
+│   ├── AGENT.md                      Copilot tool usage instructions
+│   └── README.md                     full documentation
+├── skills/
+│   ├── skill-vps-change/SKILL.md    OpenClaw skill for safe server ops
+│   └── skill-vps-backup/SKILL.md    OpenClaw skill for backup & recovery
+└── README.md                         hub index
+```
+
+---
+
+## Sensitive Data Rule
+
+**ALL credentials, passwords, tokens, and secrets → `../.env` ONLY. Never in docs or code.**
+
+- `../.env` is gitignored — the only place for real values
+- `../.env.example` has empty placeholders — commit only this
+- Docs use `${VAR_NAME}` or `<placeholder>` notation — never real values
+- Applies to: SSH passwords, API tokens, bot tokens, DB passwords, secrets
+
+---
+
+## ⛔ Owner Confirmation Rule — MANDATORY FOR ALL TASKS
+
+> **Critical operations ALWAYS require explicit confirmation from the owner (Stas) via Telegram (`tg_ask`).**
+> This rule applies to ALL tasks — VPS administration, backups, local operations, scripts, automation.
+> It applies even if Copilot has full permissions, is running in autopilot mode, or was given a broad open-ended task.
+> **`ask_user` in Copilot CLI is NOT a substitute for `tg_ask`. Use `tg_ask` first, always.**
+
+### What counts as a critical operation (always ask first):
+
+| Category | Examples |
+|----------|---------|
+| **Delete / remove data** | rm files, truncate logs, drop databases, docker prune, remove swap |
+| **Stop / restart services** | systemctl stop/restart, docker compose down, reboot |
+| **Change system config** | fstab, journald.conf, sshd_config, nginx, firewall rules |
+| **Network changes** | firewall rules, port bindings, VPN config |
+| **Disk / memory layout** | swap create/delete, partition changes, disk format, mount/unmount |
+| **Security changes** | user creation/deletion, sudo rules, SSH keys, permissions |
+| **Package install/remove** | apt install/remove, pip install system-wide |
+| **Container changes** | docker rm, image prune, compose stack changes on production |
+| **Long-running operations** | any backup, transfer, or process expected to run > 5 minutes |
+| **Large data transfers** | copying, syncing, or downloading > 100 MB |
+
+### How to ask:
+
+Before each critical step, **use `tg_ask` (Telegram MCP) as the PRIMARY and ONLY confirmation channel**.  
+The owner receives the request on their phone even when not watching the Copilot chat.  
+`ask_user` in Copilot CLI is a **fallback only** — use it only if the MCP server is confirmed unavailable (`curl http://localhost:7340/health` fails).  
+**Never silently proceed because the user already answered in chat — each critical step needs its own `tg_ask`.**
+
+### ⛔ NEVER call `tg_update.py ask` + `ask_user` together
+
+`tg_update.py ask` is **non-blocking** (returns 202 immediately — does NOT wait for a reply).  
+`tg_ask` MCP tool is **blocking** (pauses Copilot until the user replies in Telegram).
+
+**Correct pattern:**
+```
+# Call the MCP tg_ask tool directly — it blocks and returns the user's choice
+tg_ask(
+  question="Step N — [Server]: [What will be done]\nRisk: MED\nExpected: [outcome]\n\nProceed?",
+  options=["Yes", "No"]
+)
+# Proceed only if result == "Yes"
+```
+
+**Forbidden pattern (forces double-confirmation):**
+```
+# WRONG — tg_update.py ask is non-blocking:
+python3 tg_update.py ask "Proceed?" "Yes,No"   # returns 202 immediately
+ask_user(...)                                    # NOW Copilot waits for CLI answer too
+# User must confirm TWICE — once in Telegram AND once in the CLI
+```
+
+The owner should only ever need to confirm **once, in Telegram**.  
+If `tg_ask` MCP tool returns the answer, do NOT also call `ask_user`.
+
+### 🚫 If the owner is unavailable (tg_ask/ask_user returns TIMEOUT / no response):
+
+**STOP. Do not proceed with the critical operation.**
+
+This is strictly forbidden reasoning — never use it:
+> *"The user is unavailable. I will proceed autonomously because the task was explicitly requested / I have full permissions / autopilot mode is on."*
+
+A broad task request (e.g. "clean disk", "resize swap") is **NOT** confirmation for individual critical steps.  
+Confirmation must be an **explicit YES** via Telegram or Copilot chat, given in real time.
+
+**When blocked by unavailability:**
+1. Complete all safe (read-only / non-destructive) steps that don't need confirmation
+2. Send a `tg_notify` summarising what was done and what is **waiting for confirmation**
+3. List each pending critical step with its risk and expected outcome
+4. Stop and wait — do not execute any critical step until the owner responds
+
+### Exceptions (no confirmation needed):
+- Read-only inspection commands (`df`, `ls`, `cat`, `docker ps`, `systemctl status`)
+- Writing/editing local files in the git repo (not on the server)
+- Running tests or dry-runs that make no changes
+- Steps the owner confirmed explicitly and in real time in the current message
+
+---
+
+## 📝 Documentation Rule — MANDATORY
+
+> **Any new implementation, change, or new service must update all relevant documentation before the session ends.**  
+> Undocumented changes are incomplete changes.
+
+| What changed | What to update |
+|-------------|---------------|
+| New service on VPS | `docs/06-*.md` or `docs/07-*.md`, `monitoring/monitor.py` profiles |
+| New Copilot tool / skill | `skills/`, `copilot-notify/AGENT.md`, this file |
+| New safety rule or process | This file, `docs/vps-activity-protocol.md`, `skills/skill-vps-change/SKILL.md` |
+| Any session work | `docs/vps-activity-log.md` + `docs/vps-coding-protocol.md` (both mandatory) |
+| Paths / structure changed | `README.md`, directory tree in this file, any README referencing old paths |
+
+---
+
+1. **Read before write** — understand what is running before changing it
+2. **Backup first** — `cp file file.bak` before editing any config
+3. **Test before apply** — `nginx -t`, `--dry-run`, etc.
+4. **Prefer reload** — `systemctl reload` instead of `restart` where possible
+5. **Log every change** — update `./docs/vps-activity-log.md` after each session
+6. **Write session protocol** — add a row to `./docs/vps-coding-protocol.md` for every request. **Mandatory — not optional.**
+7. **Update documentation** — see Documentation Rule above; undocumented changes are incomplete
+8. **Reversible steps** — keep old configs until new ones are verified
+9. **Ask before acting** — see Owner Confirmation Rule above
+
+---
 
 ## How to Work
 
-- Load credentials: `source ../.env`
-- Connect via SSH: `ssh ${VPS_USER}@${VPS_HOST}`
-- Run commands remotely: `ssh ${VPS_USER}@${VPS_HOST} 'command here'`
-- Use `sudo` for privileged operations
-- Prefer non-destructive, reversible commands; confirm before deleting data
-- When editing config files, back them up first (e.g. `cp file file.bak`)
+```bash
+source ../.env   # load all credentials
+
+# SSH to dev2null.de
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST}
+
+# Run a remote command
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} 'sudo systemctl status nginx'
+
+# SSH to dev2null.website
+sshpass -p "${WEB_PASS}" ssh ${WEB_USER}@${WEB_HOST}
+```
+
+---
 
 ## Common Tasks
 
 ### Services
 ```bash
 source ../.env
-# Status of all services
-ssh ${VPS_USER}@${VPS_HOST} 'sudo systemctl status nginx postgres n8n'
-
-# Restart a service
-ssh ${VPS_USER}@${VPS_HOST} 'sudo systemctl restart <service>'
-
-# View logs
-ssh ${VPS_USER}@${VPS_HOST} 'sudo journalctl -u <service> -n 100 --no-pager'
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} 'sudo systemctl status nginx postgresql docker'
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} 'sudo systemctl restart <service>'
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} 'sudo journalctl -u <service> -n 100 --no-pager'
 ```
 
 ### nginx
 ```bash
 source ../.env
-ssh ${VPS_USER}@${VPS_HOST} 'sudo nginx -t'
-ssh ${VPS_USER}@${VPS_HOST} 'sudo systemctl reload nginx'
-ssh ${VPS_USER}@${VPS_HOST} 'ls /etc/nginx/sites-enabled/'
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} 'sudo nginx -t && sudo systemctl reload nginx'
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} 'ls /etc/nginx/sites-enabled/'
+```
+
+### Docker services
+```bash
+source ../.env
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} 'docker ps'
+# Manage a compose stack (e.g. nextcloud):
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} 'cd /opt/nextcloud-docker && sudo docker compose ps'
 ```
 
 ### PostgreSQL
 ```bash
 source ../.env
-ssh ${VPS_USER}@${VPS_HOST} 'sudo -u postgres psql'
-ssh ${VPS_USER}@${VPS_HOST} 'sudo -u postgres psql -c "\l"'
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} 'sudo -u postgres psql -c "\l"'
 ```
 
-### System Health
+### System health
 ```bash
 source ../.env
-ssh ${VPS_USER}@${VPS_HOST} 'df -h && free -h'
-ssh ${VPS_USER}@${VPS_HOST} 'sudo systemctl --failed'
+ssh -i ~/.ssh/id_ed25519 ${VPS_USER}@${VPS_HOST} 'df -h && free -h && sudo systemctl --failed'
 ```
 
-### Firewall (ufw)
-```bash
-source ../.env
-ssh ${VPS_USER}@${VPS_HOST} 'sudo ufw status verbose'
+---
+
+## Stack — dev2null.de
+
+| Service | Location | URL |
+|---------|----------|-----|
+| nginx | systemd | — |
+| PostgreSQL | systemd | — |
+| Postfix/Dovecot | systemd | mail.dev2null.de |
+| n8n | Docker `/opt/n8n-docker/` | automata.dev2null.de |
+| EspoCRM | Docker | crm.dev2null.de |
+| Nextcloud | Docker `/opt/nextcloud-docker/` | cloud.dev2null.de |
+| PGAdmin | Docker | db.dev2null.de |
+| Roundcube | systemd/web | webmail.dev2null.de |
+| SpamAssassin | systemd (`spamd`) | — |
+
+Full infra map: `./docs/06-vps-dev2null.de.md`
+
+## Stack — dev2null.website
+
+| Service | Location |
+|---------|----------|
+| nginx | systemd |
+| x-ui (Xray VPN) | systemd |
+| haproxy | systemd |
+| webinar.bot | systemd |
+| amnezia-wg-easy | Docker |
+
+Full docs: `./docs/07-vps-dev2null.website.md`
+
+---
+
+## Monitoring
+
+Health-check daemon deployed to both VPS servers.
+
+- **Source:** `./monitoring/monitor.py`
+- **Deploy:** `bash ./monitoring/install.sh`
+- **Config:** `./monitoring/monitor.env.example` → copy to `/opt/sintaris-monitor/.env` on VPS
+- **Schedule:** every 5 min + 08:00 daily summary
+- **Alerts:** Telegram bot (`TG_BOT_TOKEN` + `TG_CHAT_ID` from `../.env`)
+
+Monitored on dev2null.de: nginx, spamd, postgresql, docker + 9 containers + 5 HTTP endpoints  
+Monitored on dev2null.website: nginx, docker, x-ui, haproxy, webinar.bot
+
+---
+
+## Copilot Notify (MCP Server)
+
+Bidirectional Telegram ↔ Copilot notifications. Runs as persistent Docker service.
+
+- **Source:** `./copilot-notify/`
+- **Docs:** `./copilot-notify/README.md`
+- **Agent instructions:** `./copilot-notify/AGENT.md` ← include in Copilot prompts
+- **MCP endpoint:** `http://localhost:7340/sse`
+- **Manage:**
+  ```bash
+  cd ./copilot-notify
+  docker compose up -d        # start
+  docker compose logs -f      # logs
+  curl http://localhost:7340/health
+  ```
+- **Registered in:** `~/.copilot/mcp-config.json`
+
+### Copilot Notify Tool Usage
+
+Include `./copilot-notify/AGENT.md` in every session where you want Telegram notifications.
+
+Quick reference:
+- `tg_notify(message, level?)` — send notification (always use for pauses, errors, milestones)
+- `tg_ask(question, options?, timeout_sec?)` — ask user, wait for reply; use `options=["Yes","No"]` for buttons
+- `tg_status(status)` — update `/status` queryable state at each major phase
+- `tg_complete(summary, wait_for_task?)` — send FULL results, optionally show "New task" button
+
+---
+
+## VPS Change Skill (OpenClaw)
+
+Safe server operation skill for OpenClaw AI gateway.
+
+- **Source:** `./skills/skill-vps-change/SKILL.md`
+- **Deployed:** `~/.openclaw/skills/skill-vps-change/` (symlink)
+- **Update symlink after move:**
+  ```bash
+  ln -sfn /home/stas/projects/sintaris-srv/vps-admin/skills/skill-vps-change ~/.openclaw/skills/skill-vps-change
+  ```
+
+### Backup & Recovery Skill
+
+- **Source:** `./skills/skill-vps-backup/SKILL.md`
+- **Deployed:** `~/.openclaw/skills/skill-vps-backup/` (symlink)
+- **Update symlink after move:**
+  ```bash
+  ln -sfn /home/stas/projects/sintaris-srv/vps-admin/skills/skill-vps-backup ~/.openclaw/skills/skill-vps-backup
+  ```
+
+---
+
+## Activity Log
+
+**Log every Copilot-assisted server change** in `./docs/vps-activity-log.md` before session ends.
+
+Format: `./docs/vps-activity-protocol.md`
+
+```markdown
+| # | Time (UTC) | Server | Action | Description | Risk | Result |
 ```
 
-## Notes
+---
 
-- n8n likely runs as a systemd service or via Docker — verify with `systemctl status n8n` or `docker ps`
-- Nextcloud config: `/var/www/nextcloud/config/config.php` or Docker volume
-- WordPress sites: typically under `/var/www/`
-- EspoCRM: typically under `/var/www/`
-- SSL certificates: managed by Let's Encrypt (`/etc/letsencrypt/`)
+## OpenClaw (Local AI Gateway)
+
+OpenClaw lives outside `vps-admin/` — do not move its artifacts here.
+
+- **Project:** `../sinta-openclaw/`
+- **Skills:** `../sinta-openclaw/skills/` symlinked to `~/.openclaw/skills/`
+- **MCP server:** `~/.local/lib/openclaw-mcp/server.mjs`
+- **Architecture:** `../sinta-openclaw/docs/architecture.md`
+- **Install guide:** `../sinta-openclaw/docs/install.md`
+
+---
+
+## Documentation Rule
+
+**Update docs whenever a service is installed, configured, or changed.**
+
+| What changed | Update |
+|---|---|
+| dev2null.de service/config | `./docs/06-vps-dev2null.de.md` |
+| dev2null.website service/config | `./docs/07-vps-dev2null.website.md` |
+| VPS general setup procedure | `../docs/03-vps-server-setup.md` |
+| N8N config | `../docs/05-n8n-vps-setup.md` |
+| OpenClaw skill | `../sinta-openclaw/docs/architecture.md` |
+| Any Copilot session with changes | `./docs/vps-activity-log.md` |
+| New component in vps-admin | `./README.md` |
+
+General doc index: `../docs/index.md`

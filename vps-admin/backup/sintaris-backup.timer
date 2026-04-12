@@ -1,0 +1,14 @@
+[Unit]
+Description=Sintaris VPS Backup — daily at 02:00 UTC
+
+[Timer]
+# Daily at 02:00 UTC (low traffic window)
+OnCalendar=*-*-* 02:00:00
+# Run immediately if last run was missed (e.g. server was down)
+Persistent=true
+# Randomize start within 15 min to avoid simultaneous backups on both servers
+RandomizedDelaySec=900
+Unit=sintaris-backup.service
+
+[Install]
+WantedBy=timers.target

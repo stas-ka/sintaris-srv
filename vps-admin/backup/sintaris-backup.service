@@ -1,0 +1,16 @@
+[Unit]
+Description=Sintaris VPS Backup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/opt/sintaris-backup/backup.sh
+StandardOutput=journal
+StandardError=journal
+# Give backup up to 4 hours
+TimeoutStartSec=14400
+
+[Install]
+WantedBy=multi-user.target
