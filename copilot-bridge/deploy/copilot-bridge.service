@@ -1,0 +1,16 @@
+[Unit]
+Description=Copilot Bridge — GitHub Copilot local API proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/copilot-bridge
+ExecStart=python3 %h/copilot-bridge/src/server.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
